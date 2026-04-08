@@ -8,11 +8,7 @@
 Thumbs.db
 
 # Ignore large media files & materials root folder
-*.mp4
-*.MOV
-*.mkv
 material/
-backend/storage/app/public/lessons/
 
 # Environment files
 .env

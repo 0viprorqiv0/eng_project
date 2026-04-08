@@ -1,0 +1,232 @@
+[
+  {
+    "id": "q1",
+    "type": "multiple_choice",
+    "question": "She came into the room while they ………… television.",
+    "options": [
+      {
+        "text": "watched",
+        "isCorrect": false
+      },
+      {
+        "text": "have watched",
+        "isCorrect": false
+      },
+      {
+        "text": "are watching",
+        "isCorrect": false
+      },
+      {
+        "text": "were watching",
+        "isCorrect": true
+      }
+    ]
+  },
+  {
+    "id": "q2",
+    "type": "multiple_choice",
+    "question": "I ………. a headache since yessterday.",
+    "options": [
+      {
+        "text": "had",
+        "isCorrect": false
+      },
+      {
+        "text": "was having",
+        "isCorrect": false
+      },
+      {
+        "text": "have had",
+        "isCorrect": true
+      },
+      {
+        "text": "would have",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": "q3",
+    "type": "multiple_choice",
+    "question": "Peter has been trying for an hour, but his car still ……… start.",
+    "options": [
+      {
+        "text": "won’t",
+        "isCorrect": false
+      },
+      {
+        "text": "wouldn’t",
+        "isCorrect": false
+      },
+      {
+        "text": "didn’t",
+        "isCorrect": true
+      },
+      {
+        "text": "hasn’t",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": "q4",
+    "type": "multiple_choice",
+    "question": "It’s an hour since he …………, so he must be at the office now.",
+    "options": [
+      {
+        "text": "is leaving",
+        "isCorrect": false
+      },
+      {
+        "text": "was leaving",
+        "isCorrect": false
+      },
+      {
+        "text": "has left",
+        "isCorrect": true
+      },
+      {
+        "text": "left",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": "q5",
+    "type": "multiple_choice",
+    "question": "The girl weeps whenever she ……… such a story.",
+    "options": [
+      {
+        "text": "hears",
+        "isCorrect": true
+      },
+      {
+        "text": "has heard",
+        "isCorrect": false
+      },
+      {
+        "text": "will hear",
+        "isCorrect": false
+      },
+      {
+        "text": "heard",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": "q6",
+    "type": "multiple_choice",
+    "question": "My teacher arrived after we …… for him for ten minutes.",
+    "options": [
+      {
+        "text": "was waiting",
+        "isCorrect": false
+      },
+      {
+        "text": "have waited",
+        "isCorrect": false
+      },
+      {
+        "text": "had waited",
+        "isCorrect": true
+      },
+      {
+        "text": "waited",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": "q7",
+    "type": "multiple_choice",
+    "question": "London ……… the capital of the United Kingdom.",
+    "options": [
+      {
+        "text": "is",
+        "isCorrect": true
+      },
+      {
+        "text": "was",
+        "isCorrect": false
+      },
+      {
+        "text": "will be",
+        "isCorrect": false
+      },
+      {
+        "text": "is being",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": "q8",
+    "type": "multiple_choice",
+    "question": "Someone …….. at the door. Can you hear it?",
+    "options": [
+      {
+        "text": "knocks",
+        "isCorrect": false
+      },
+      {
+        "text": "is knocking",
+        "isCorrect": true
+      },
+      {
+        "text": "will knock",
+        "isCorrect": false
+      },
+      {
+        "text": "was knocking",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": "q9",
+    "type": "multiple_choice",
+    "question": "I used to swim in this river when I …….. young.",
+    "options": [
+      {
+        "text": "am",
+        "isCorrect": false
+      },
+      {
+        "text": "was",
+        "isCorrect": true
+      },
+      {
+        "text": "will be",
+        "isCorrect": false
+      },
+      {
+        "text": "have been",
+        "isCorrect": false
+      }
+    ]
+  },
+  {
+    "id": "q10",
+    "type": "multiple_choice",
+    "question": "Since they had that big argument, he crosses the street whenever he ….... her.",
+    "options": [
+      {
+        "text": "saw",
+        "isCorrect": false
+      },
+      {
+        "text": "sees",
+        "isCorrect": true
+      },
+      {
+        "text": "will see",
+        "isCorrect": false
+      },
+      {
+        "text": "is seeing",
+        "isCorrect": false
+      }
+    ]
+  }
+]

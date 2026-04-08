@@ -1,2 +1,6 @@
 *
 !.gitignore
+!lessons/
+!lessons/**
+!submissions/
+!submissions/**
