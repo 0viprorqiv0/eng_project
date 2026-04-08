@@ -1,0 +1,40 @@
+# IDE
+.vscode/
+.idea/
+.fleet/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Ignore large media files & materials root folder
+*.mp4
+*.MOV
+*.mkv
+material/
+backend/storage/app/public/lessons/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+
+# Database
+*.sqlite
+
+# Testing accounts (sensitive)
+TESTING_ACCOUNTS.md
+
+# Temp files
+tmp_*
