@@ -39,6 +39,7 @@ export const api = {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/json',
+        'ngrok-skip-browser-warning': 'true',
       },
       body: formData,
     });
@@ -53,6 +54,7 @@ async function fetchAPI(endpoint: string, options: RequestInit) {
   const headers = new Headers(options.headers || {});
   
   headers.set('Accept', 'application/json');
+  headers.set('ngrok-skip-browser-warning', 'true');
   if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
