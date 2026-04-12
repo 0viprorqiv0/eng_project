@@ -46,4 +46,4 @@ COPY ./nginx.conf /etc/nginx/sites-available/default
 EXPOSE 80
 
 # Chạy migrate và khởi động Nginx + PHP-FPM
-CMD php artisan migrate --force && php artisan storage:link && php-fpm -D && nginx -g 'daemon off;'
+CMD php artisan config:clear && php artisan migrate --force && php artisan storage:link && php-fpm -D && nginx -g 'daemon off;'
