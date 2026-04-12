@@ -18,20 +18,20 @@ BeeLearn là giải pháp Monorepo hiện đại kết hợp sức mạnh của 
 ```text
 eng_project/
 ├── .gitignore            ← Cấu hình bảo mật Root
-├── docs/                 ← Tài liệu hệ thống (Đã tổ chức lại)
+├── docs/                 ← Tài liệu hệ thống
 │   ├── ARCHITECTURE.md
 │   ├── FEATURE_REVIEW.md
+│   ├── PROJECT_STATUS_SUMMARY.md
 │   └── TESTING_ACCOUNTS.md
-├── frontend/             ← React 19 + TypeScript (Đã cleanup)
+├── frontend/             ← React 19 + TypeScript
 │   ├── src/
 │   │   ├── components/   ← AuthContext, BeeDecoration, MainLayout
 │   │   ├── pages/        ← 5 Subfolders (auth, public, dashboard, courses, features)
-│   │   └── data/         ← Static Course configuration
-└── backend/              ← Laravel 12 (Đã bảo mật database)
-    ├── app/
-    ├── database/         ← SQLite database (Gitignored)
-    └── routes/
-
+│   │   └── lib/          ← Axios API Client (api.ts)
+└── backend/              ← Laravel 12 (REST API)
+    ├── app/              ← Controllers, Models, Middleware
+    ├── database/         ← Migrations & Seeders → MySQL (XAMPP)
+    └── routes/           ← api.php (125+ API Routes)
 ```
 
 ---
@@ -41,31 +41,69 @@ eng_project/
 | Layer | Technologies |
 |---|---|
 | **Frontend** | React 19, TypeScript, Vite, Tailwind CSS 4, Framer Motion |
-| **Backend** | PHP 8.2, Laravel 12, Sanctum, Eloquent ORM, SQLite |
+| **Backend** | PHP 8.2, Laravel 12, Sanctum, Eloquent ORM |
+| **Database** | MySQL (XAMPP, cổng 3306) |
 | **UX/UI** | Lucide Icons, Glassmorphic CSS, Cinema Mode Video Player |
 | **Media** | Secure Internal Hosting (Public Disk), HTML5 Custom Player |
-| **AI Integration** | Google Gemini (Backend analysis & content generation) |
 
 ---
 
-## 🛠️ Hướng dẫn cài đặt (Specific Setup)
+## 🛠️ Hướng dẫn cài đặt
 
-### 1️⃣ Frontend Setup (Cổng 3000)
-```bash
-cd frontend
-npm install
-npm run dev                      
+### 0️⃣ Yêu cầu hệ thống
+- **XAMPP** (đã cài đặt tại `C:\xampp`)
+- **Composer** (PHP package manager)
+- **Node.js** ≥ 18 + npm
+
+### 1️⃣ Khởi động XAMPP MySQL
+1. Mở **XAMPP Control Panel**.
+2. Nhấn **Start** bên cạnh **MySQL**.
+3. Nếu báo lỗi *"Port 3306 in use"*, tắt MySQL Server bằng lệnh sau (chạy PowerShell với quyền **Admin**):
+   ```powershell
+   net stop MySQL80
+   ```
+   Sau đó nhấn **Start** MySQL trong XAMPP lại.
+
+### 2️⃣ Tạo Database
+Mở PowerShell và chạy:
+```powershell
+& "C:\xampp\mysql\bin\mysql.exe" -u root -e "CREATE DATABASE IF NOT EXISTS beelearn CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 ```
+> **Lưu ý:** XAMPP MySQL mặc định tài khoản `root` **không có mật khẩu**.
 
-### 2️⃣ Backend Setup (Cổng 8000)
+### 3️⃣ Backend Setup (Cổng 8000)
 ```bash
 cd backend
 composer install
-# Quan trọng: Chạy migrate để áp dụng bảng Media & Notifications mới
-php artisan migrate --seed  
+cp .env.example .env
+php artisan key:generate
+php artisan migrate:fresh --seed
 php artisan storage:link
-php artisan serve                
+php artisan serve
 ```
+
+> ⚠️ **Quan trọng:** Phải chạy `php artisan key:generate` **trước khi** `migrate:fresh --seed`. Nếu quên bước này, hệ thống sẽ không thể đăng nhập được.
+
+File `.env.example` đã được cấu hình sẵn cho XAMPP MySQL:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=beelearn
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+### 4️⃣ Frontend Setup (Cổng 5173)
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 5️⃣ Truy cập ứng dụng
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8000/api
 
 ---
 
@@ -75,12 +113,14 @@ php artisan serve
 - **Premium Learning Area**: Trình phát video chuyên nghiệp với Cinema Mode, sidebar bài học và quản lý tài liệu PDF.
 - **Hồ sơ năng lực (Radar Chart)**: Tự động phân tích kỹ năng dựa trên kết quả bài tập.
 - **Nộp bài tập (FileUpload)**: Hệ thống nộp file chuyên sâu (PDF, DOCX, ZIP) với Drag & Drop và Progress Bar.
+- **Làm bài Quiz tương tác**: Trắc nghiệm tính giờ, tự động chấm điểm, hiển thị kết quả chi tiết.
 - **Lịch học thông minh**: Nhắc lịch các buổi Live Session hoặc lớp học trực tiếp.
 
 ### 👩‍🏫 Dành cho Giáo viên (Teacher)
 - **Quản lý học liệu**: Giao diện Upload video/tài liệu bài giảng trực tiếp qua Dashboard.
-- **Hồ sơ chuyên gia**: Hiển thị bằng cấp (PhD/Master) và chứng chỉ IELTS 9.0/C2.
+- **Tạo bài giảng**: Form tạo 4 loại bài (Video, Document, Quiz, Assignment) kèm cấu hình chi tiết.
 - **Chấm bài & Phản hồi**: Quy trình chấm điểm tập trung dựa trên tệp tin nộp của học viên.
+- **Quản lý học sinh**: Xem danh sách, tiến độ và điểm trung bình của từng học sinh.
 
 ### 🛡️ Dành cho Quản trị viên (Admin)
 - **Quản trị Khóa học**: Khởi tạo khóa học mới qua Form API (Tên, Danh mục, Giá, Mô tả).
@@ -88,44 +128,36 @@ php artisan serve
 
 ---
 
-## 🎓 Học thuật & Chuyên môn (Academic Focus)
+## 📋 Tài khoản Demo
 
-### 🏆 Đội ngũ Giảng viên Tinh hoa
-Hệ thống sử dụng hồ sơ giảng viên thực tế với trình độ vượt trội:
-- **Tiến sĩ (PhD)** từ các ĐH danh giá: Cambridge (Anh), NUS (Singapore).
-- **Thạc sĩ (Master)** từ: Oxford (Anh), Melbourne (Úc).
-- **Chứng chỉ**: 100% sở hữu IELTS 8.5 - 9.0 hoặc C2 Proficiency.
+Tất cả tài khoản sử dụng mật khẩu: `password`
 
-### 📚 Danh mục khóa học Trọng tâm
-- **THPT Quốc Gia**: "Chuyên sâu 12 - Mục tiêu 9+" và "Luyện đề cấp tốc".
-- **Chứng chỉ Quốc tế**: "IELTS Mastery 8.0+ (Chinh phục đỉnh cao)".
-- **Kỹ năng nghề nghiệp**: "Tiếng Anh Công sở (Professional Communication)".
+| Email | Vai trò | Mô tả |
+|---|---|---|
+| `admin@beelearn.vn` | Admin | Quản trị & Tạo khóa học |
+| `teacher@beelearn.vn` | Teacher | Upload bài giảng & Chấm bài |
+| `student@beelearn.vn` | Student | Trải nghiệm học Premium Cinema Mode |
 
----
-
-## 📋 Tài khoản Demo (Demo Credentials)
-
-| Email | Mật khẩu | Vai trò | Mô tả |
-|---|---|---|---|
-| `admin@beelearn.vn` | `password` | Admin | Quản trị & Tạo khóa học qua API |
-| `teacher@beelearn.vn` | `password` | Teacher | Upload bài giảng & Chấm bài |
-| `student@beelearn.vn` | `password` | Student | Trải nghiệm học Premium Cinema Mode |
+> Xem đầy đủ danh sách 16 tài khoản demo tại [`docs/TESTING_ACCOUNTS.md`](docs/TESTING_ACCOUNTS.md).
 
 ---
 
 ## 📈 Trạng thái & Lộ trình (Project Roadmap)
 
-### ✅ Giai đoạn đã hoàn thành (Phase 1-11)
-*   **Kiến trúc 4 Module Bài học**: Đã triển khai đầy đủ màn hình tối ưu cho Video Player HTML5, Hiển thị tài liệu (Documents), Máy chấm trắc nghiệm tự động (Interactive Quizzes), và UI Nộp bài (Assignments File Upload).
-*   **Hệ thống Quiz Tương tác**: Đã hoàn thiện Parser đọc file text băm đáp án và tự động cấu hình cơ sở dữ liệu.
-*   **Theo dõi Tiến độ**: API Endpoint lưu quá trình tương tự Udemy. Module Ghi chú và Diễn đàn 1-1 với kho khóa học.
-*   **File Management**: Hệ thống API File độc lập, lưu trữ nội bộ bảo mật có link Storage cục bộ.
+### ✅ Đã hoàn thành
+- Kiến trúc 4 Module Bài học (Video, Document, Quiz, Assignment)
+- Hệ thống Quiz tương tác với chấm điểm tự động
+- Theo dõi tiến độ học tập (Progress Tracking)
+- Ghi chú bài học (Notes) & Diễn đàn thảo luận (Discussions)
+- Hệ thống Upload file (Submission & Lesson Media)
+- Hệ thống thông báo (Notifications API)
+- **Chuyển đổi Database sang MySQL (XAMPP)**
 
 ### ⚠️ Giai đoạn tiếp theo (Next Steps)
-1.  **UI/UX Mức cảnh báo**: Gắn Toast Notifications cải thiện UX và UI chuông thả xuống (Backend đã xong database).
-2.  **Rich Text Editor**: Sử dụng bộ soạn thảo chuyên nghiệp thay thế Textarea trong phần Diễn đàn và Bài luận sinh viên.
-3.  **Sanitization & Rate Limit**: Gắn HTMLPurifier và Laravel throttle chống tấn công Spam vào Database.
-4.  **Micro-Service Video**: Tách riêng Server Video cho mạng truyền hình tương lai (Production scale).
+1. **Toast Notifications UI**: Chuông thông báo thời gian thực trên giao diện.
+2. **Rich Text Editor**: Bộ soạn thảo chuyên nghiệp cho Diễn đàn và Bài luận.
+3. **Cổng thanh toán**: Tích hợp VNPAY/MoMo cho quy trình đăng ký khóa học.
+4. **Quên mật khẩu**: Luồng reset password qua email SMTP.
 
 ---
 *Phát triển bởi đội ngũ **BeeLearn Academy** — Nâng tầm giáo dục qua công nghệ.*

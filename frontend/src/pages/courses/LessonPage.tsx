@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
-  Play, Pause, Volume2, VolumeX, Maximize, ChevronLeft, 
+  Play, ChevronLeft, 
   BookOpen, FileText, Download, Clock, CheckCircle, ClipboardList,
   ChevronRight, List, X, Loader2, Send, Upload, CheckCircle2
 } from 'lucide-react';
@@ -48,11 +48,6 @@ export function LessonPage() {
   const [activeTab, setActiveTab] = useState<'content' | 'materials' | 'homework'>('content');
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Video state
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
 
   // Homework/Assignment state
   const [homeworkContent, setHomeworkContent] = useState('');
@@ -76,51 +71,7 @@ export function LessonPage() {
     if (id) fetchLesson();
   }, [id]);
 
-  const togglePlay = () => {
-    if (!videoRef.current) return;
-    if (isPlaying) {
-      videoRef.current.pause();
-    } else {
-      videoRef.current.play();
-    }
-    setIsPlaying(!isPlaying);
-  };
 
-  const toggleMute = () => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = !isMuted;
-    setIsMuted(!isMuted);
-  };
-
-  const handleFullscreen = () => {
-    videoRef.current?.requestFullscreen();
-  };
-
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      setCurrentTime(videoRef.current.currentTime);
-    }
-  };
-
-  const handleLoadedMetadata = () => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration);
-    }
-  };
-
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = parseFloat(e.target.value);
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-      setCurrentTime(time);
-    }
-  };
-
-  const formatTime = (sec: number) => {
-    const m = Math.floor(sec / 60);
-    const s = Math.floor(sec % 60);
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
 
   const currentIdx = siblings.findIndex(s => s.id === lesson?.id);
   const prevLesson = currentIdx > 0 ? siblings[currentIdx - 1] : null;
@@ -202,53 +153,15 @@ export function LessonPage() {
         <div className="flex-1 flex flex-col overflow-y-auto">
           {/* Video Player */}
           {hasVideo ? (
-            <div className="relative bg-black aspect-video w-full max-h-[70vh] group">
+            <div className="bg-black aspect-video w-full max-h-[70vh]">
               <video
                 ref={videoRef}
                 src={lesson.video_full_url!}
                 className="w-full h-full object-contain"
-                onTimeUpdate={handleTimeUpdate}
-                onLoadedMetadata={handleLoadedMetadata}
-                onEnded={() => setIsPlaying(false)}
-                onClick={togglePlay}
+                controls
+                controlsList="nodownload"
+                preload="metadata"
               />
-              
-              {/* Play overlay */}
-              {!isPlaying && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer" onClick={togglePlay}>
-                  <div className="w-20 h-20 rounded-full bg-[#E24843]/90 flex items-center justify-center shadow-2xl hover:scale-110 transition-transform">
-                    <Play className="w-10 h-10 text-white ml-1" />
-                  </div>
-                </div>
-              )}
-
-              {/* Controls */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent px-4 py-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                {/* Progress bar */}
-                <input
-                  type="range"
-                  min={0}
-                  max={duration || 0}
-                  value={currentTime}
-                  onChange={handleSeek}
-                  className="w-full h-1 bg-white/30 rounded-full appearance-none cursor-pointer mb-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#E24843]"
-                />
-                <div className="flex items-center gap-3">
-                  <button onClick={togglePlay} className="text-white hover:text-[#E24843] transition-colors">
-                    {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-                  </button>
-                  <button onClick={toggleMute} className="text-white hover:text-[#E24843] transition-colors">
-                    {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                  </button>
-                  <span className="text-white/70 text-xs font-mono">
-                    {formatTime(currentTime)} / {formatTime(duration)}
-                  </span>
-                  <div className="flex-1" />
-                  <button onClick={handleFullscreen} className="text-white hover:text-[#E24843] transition-colors">
-                    <Maximize className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
             </div>
           ) : (
             <div className="bg-gradient-to-br from-[#13375f] to-[#0a1628] aspect-video w-full max-h-[40vh] flex items-center justify-center">

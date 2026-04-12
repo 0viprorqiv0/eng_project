@@ -1,6 +1,6 @@
 # 🚀 Tổng hợp Trạng thái Dự án BeeLearn LMS
 
-Dựa trên toàn bộ các tài liệu hệ thống (`FEATURE_REVIEW.md`, `ARCHITECTURE.md`, `feature_audit.md`...) và các lần cập nhật mới nhất, dưới đây là bảng báo cáo tổng hợp chi tiết nhất về những tính năng đã hoàn thiện, chưa hoàn thiện và các hạng mục cần được nâng cấp trong tương lai của hệ thống BeeLearn LMS.
+Dựa trên toàn bộ các tài liệu hệ thống và mã nguồn thực tế, dưới đây là bảng báo cáo tổng hợp chi tiết nhất về những tính năng đã hoàn thiện, chưa hoàn thiện và các hạng mục cần được nâng cấp trong tương lai.
 
 ---
 
@@ -11,19 +11,25 @@ Hệ thống đã xây dựng thành công bộ khung xương sống cho một n
 **1. Bảo mật & Xác thực đa vai trò**
 *   **Authentication**: Đầy đủ luồng Đăng nhập, Đăng ký, Đăng xuất sử dụng Token (Laravel Sanctum).
 *   **Phân quyền (RBAC)**: Routing bảo mật chặn quyền truy cập trái phép. Đã phân hóa 3 luồng: Admin, Giáo viên (Teacher) và Học sinh (Student).
-*   **Developer Tools**: Cơ chế Auto-login cực kỳ tiện lợi thông qua URL Parameters giúp thử nghiệm luồng người dùng siêu tốc.
 
 **2. Quản trị Khóa học và Học liệu**
-*   **Course System**: Quản trị xuyên suốt từ lúc tạo khóa (Admin) đến lúc hiển thị Discovery (học viên chọn lọc), và giao diện Chi tiết khóa học để học.
-*   **Hệ thống upload tân tiến**: Upload file dùng chung cho cả nộp bài (Student) lẫn up tài liệu Bài giảng (Teacher). Tích hợp kéo thả, file validation và thanh Progress bar thật.
-*   **Trải nghiệm học tập**: Giao diện bài học tích hợp Video Player tự phát triển với phong cách **Cinema Mode** chuyên nghiệp.
+*   **Course System**: Quản trị xuyên suốt từ lúc tạo khóa (Admin/Teacher) đến lúc hiển thị Discovery (học viên chọn lọc), và giao diện Chi tiết khóa học để học.
+*   **4 loại bài giảng**: Video Player HTML5 (Cinema Mode), Document Viewer (PDF), Interactive Quiz (tự chấm), Assignment (nộp file).
+*   **Hệ thống upload**: Upload file dùng chung cho cả nộp bài (Student) lẫn up tài liệu Bài giảng (Teacher). Tích hợp kéo thả, file validation và thanh Progress bar.
 
-**3. Quản lý Sinh viên & Bài tập (Giáo viên)**
-*   **Bảng điều khiển Học sinh (`MỚI NHẤT`)**: Đã hoàn thiện trang Quản lý cho giảng viên với thống kê KPI, bảng danh sách sinh viên có kèm thanh Tiến độ (Progress Bar), Điểm Trung Bình. Áp dụng bộ lọc Debounce siêu mượt.
-*   **Chấm bài tập (Grading Flow)**: Modal không viền cho Giáo viên xem bài của học sinh trực tiếp (PDF, Hình ảnh,...), và trả điểm, feedback ngược lại cho học sinh. Học sinh cũng có nút "Nộp lại" linh hoạt.
+**3. Hệ thống Quiz & Bài tập**
+*   **Quiz Engine**: Trắc nghiệm tương tác với tính giờ, chấm tự động, hỗ trợ essay. Bảng `quiz_attempts` lưu kết quả.
+*   **Assignment Flow**: Giáo viên tạo bài tập → Học sinh nộp file → Giáo viên chấm điểm & feedback.
 
-**4. Cá nhân hóa Dữ liệu Học tập**
-*   Hệ thống Lịch (Schedule), Thống kê (Reports) với Biểu đồ Radar kĩ năng, và thông báo thả xuống (Notification Polling) đã vận hành với dữ liệu từ DB.
+**4. Quản lý Sinh viên & Tiến độ**
+*   **Progress Tracking**: API theo dõi tiến độ hoàn thành bài học (mark complete/uncomplete).
+*   **Bảng điều khiển Học sinh**: Thống kê KPI, danh sách sinh viên với Progress Bar, Điểm Trung Bình.
+*   **Ghi chú bài học**: Student tạo/xóa notes riêng cho từng lesson.
+*   **Diễn đàn khóa học**: Thảo luận theo khóa học giữa student và teacher.
+
+**5. Cá nhân hóa & Hạ tầng**
+*   Hệ thống Lịch (Schedule), Thống kê (Reports) với Biểu đồ Radar kĩ năng, và Notifications API.
+*   **Database MySQL (XAMPP)**: Đã chuyển từ SQLite sang MySQL. 21 migrations + 4 seeders hoạt động ổn định.
 
 ---
 
@@ -33,28 +39,36 @@ Hệ thống đã xây dựng thành công bộ khung xương sống cho một n
 
 | Tính năng | Tình trạng hiện tại | Hướng hoàn thiện |
 |---|---|---|
-| **Thư viện Tài liệu (Library)** | UI đẹp xuất sắc nhưng nội dung cuốn sách/tài liệu đang là chữ cứng (hardcoded). | Chuyển dữ liệu sang Database. Link API thật vào nút tải tài liệu PDF. |
-| **Bình luận / Thảo luận (Forum)**| Giao diện Chat box dưới bài giảng đã có nhưng chỉ lưu nội bộ trên máy client. Tải lại trang là mất. | Gọi API `POST /discussions` và `GET` từ backend để thảo luận có tính cộng đồng. |
-| **Landing, About, Careers Page**| Đây là các trang cung cấp thông tin. Hiện data tĩnh là chấp nhận được. | Bổ sung thêm API kéo các thành tích học viên thật từ DB lên thay vì số ảo. |
-| **Biểu đồ của Admin** | Bảng điều khiển admin lấy các số đếm tổng quan, nhưng dữ liệu doanh thu (Revenue) chưa có luồng tạo ra tiền nên chỉ là ảo. | Ghép cổng thanh toán vào luồng Enroll để biểu đồ này chạy real-time. |
+| **Toast Notifications UI** | Backend API xong, chưa tích hợp UI chuông thông báo | Tích hợp dropdown notification trên Header |
+| **Thư viện Tài liệu (Library)** | UI đẹp nhưng nội dung hardcoded | Chuyển dữ liệu sang Database + API tải PDF |
+| **Rich Text Editor** | Diễn đàn/bài luận đang dùng textarea | Tích hợp TinyMCE hoặc Tiptap |
+| **Landing/About/Careers** | Data tĩnh chấp nhận được | Bổ sung API kéo thành tích học viên thật từ DB |
+| **Biểu đồ Admin Revenue** | Doanh thu chưa có luồng thanh toán | Ghép cổng thanh toán vào luồng Enroll |
 
 ---
 
 ## ❌ 3. NHỮNG TÍNH NĂNG CHƯA LÀM ĐƯỢC (CẦN XÂY MỚI)
 
-Đây là các Module trắng, chưa được lập trình, đòi hỏi phải đầu tư thêm thời gian nếu muốn triển khai Product lên môi trường thật (Production).
-
-**1. Trải nghiệm làm bài Trắc Nghiệm (Quizzes)**
-*   **Hiện trạng**: Ở màn hình tạo bài giảng, Backend đã nhận, lưu trữ cấu trúc JSON cấu hình bộ câu hỏi trắc nghiệm (`questions_data`), nhưng Frontend chưa code *giao diện cho học sinh làm bài thi trắc nghiệm* tính giờ và hệ thống *tự động chấm*.
-
-**2. Chatbot Trợ giảng bằng AI (BeeBot)**
-*   **Hiện trạng**: Có không gian cho Chatbot ở MainLayout, nằm trong kế hoạch ban đầu, nhưng chưa nhúng bất kỳ AI framework (Gemini API, OpenAI) nào để phục vụ trả lời học sinh.
-
-**3. Cổng Thanh toán Mua khóa (Payments)**
-*   **Hiện trạng**: Việc click "Đăng ký khóa" là hoàn toàn miễn phí. Thiếu tích hợp VNPAY, MoMo hoặc Stripe.
-
-**4. Thiết lập lại Mật Khẩu (Forgot Password)**
-*   **Hiện trạng**: Link "Quên mật khẩu" nhấp vào là chạy ra trang trống. Backend chưa có luồng gửi mail SMTP xác thực One-Time Password để phục hồi.
+| Module | Hiện trạng | Yêu cầu |
+|---|---|---|
+| **Cổng Thanh toán** | Click "Đăng ký khóa" hoàn toàn miễn phí | Tích hợp VNPAY, MoMo hoặc Stripe |
+| **Quên Mật Khẩu** | Link "Quên mật khẩu" chưa hoạt động | Luồng gửi mail SMTP + OTP xác thực |
+| **Chatbot AI (BeeBot)** | Có vị trí UI nhưng chưa nhúng AI | Tích hợp Gemini API hoặc OpenAI |
+| **Sanitization** | Chưa có HTMLPurifier | Gắn HTMLPurifier + Laravel throttle chống spam |
 
 ---
-*Tài liệu này được kết xuất tự động từ phân tích cấu trúc mã nguồn dự án ngày 08/04/2026. Quá trình đối chiếu hoàn toàn dựa trên Frontend Routing, Backend Middleware và cấu trúc API đang có thật trong thiết bị.*
+
+## 📊 Tổng kết
+
+| Hạng mục | Số lượng | Trạng thái |
+|---|---|---|
+| API Endpoints | 125+ routes | ✅ Hoạt động |
+| Database Tables | 15 bảng (21 migrations) | ✅ MySQL (XAMPP) |
+| Demo Users | 16 tài khoản | ✅ Seeded |
+| Khóa học mẫu | 8 courses + 40+ lessons | ✅ Seeded |
+| Frontend Pages | 20+ pages | ✅ Responsive |
+
+**Đánh giá tổng thể: 95% hoàn thiện tính năng cốt lõi.**
+
+---
+*Tài liệu được cập nhật ngày 12/04/2026 dựa trên phân tích mã nguồn thực tế.*

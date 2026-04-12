@@ -26,8 +26,9 @@ build/
 # Logs
 *.log
 
-# Database
-*.sqlite
+# Executables & Tools
+ngrok.exe
+*.exe
 
 # Testing accounts (sensitive)
 TESTING_ACCOUNTS.md
