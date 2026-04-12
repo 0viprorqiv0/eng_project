@@ -13,6 +13,6 @@ return [
     |
     */
 
-    'cloud_url' => env('CLOUDINARY_URL'),
+    'cloud_url' => env('CLOUDINARY_URL', 'cloudinary://632961319992842:3yJDJHtymT7FSTiPoGqNsKhtzho@dbrqmnrcx'),
 
 ];
