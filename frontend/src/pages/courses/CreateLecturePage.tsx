@@ -209,6 +209,8 @@ export function CreateLecturePage() {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append('file', fileToUpload);
+      formData.append('type', lessonType === 'video' ? 'video' : 'material');
+      formData.append('course_id', selectedCourse);
       const token = localStorage.getItem('token');
 
       const xhr = new XMLHttpRequest();
