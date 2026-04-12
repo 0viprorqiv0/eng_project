@@ -17,6 +17,11 @@ RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 # Cài đặt PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
+# Cấu hình PHP cho upload lớn
+RUN echo "upload_max_filesize=200M" > /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "post_max_size=200M" >> /usr/local/etc/php/conf.d/uploads.ini && \
+    echo "memory_limit=256M" >> /usr/local/etc/php/conf.d/uploads.ini
+
 # Lấy Composer mới nhất
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
