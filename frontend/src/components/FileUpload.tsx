@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
+import { BASE_URL } from '../lib/api';
 import { Upload, X, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 interface FileUploadProps {
@@ -83,7 +84,7 @@ export function FileUpload({
           }
         };
         xhr.onerror = () => reject(new Error('Lỗi kết nối'));
-        xhr.open('POST', `http://127.0.0.1:8000/api${uploadEndpoint}`);
+        xhr.open('POST', `${BASE_URL}/api${uploadEndpoint}`);
         if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
         xhr.setRequestHeader('Accept', 'application/json');
         xhr.send(formData);

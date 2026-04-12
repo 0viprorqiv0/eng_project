@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { BASE_URL } from '../../lib/api';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/AuthContext';
@@ -223,7 +224,7 @@ export function CreateLecturePage() {
         }
       };
       xhr.onerror = () => reject(new Error('Lỗi kết nối'));
-      xhr.open('POST', 'http://127.0.0.1:8000/api/upload/lesson-media');
+      xhr.open('POST', `${BASE_URL}/api/upload/lesson-media`);
       if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
       xhr.setRequestHeader('Accept', 'application/json');
       xhr.send(formData);
