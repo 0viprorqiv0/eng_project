@@ -1,15 +1,15 @@
 <?php
 
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
 class FileController extends Controller
 {
     /**
      * POST /api/upload/submission — Student: upload assignment file
-     * Max: 20MB | Allowed: pdf, doc, docx, zip, rar, jpg, png, mp3
      */
     public function uploadSubmission(Request $request)
     {
@@ -20,24 +20,22 @@ class FileController extends Controller
         $file = $request->file('file');
         $originalName = $file->getClientOriginalName();
 
-        // Store in: storage/app/public/submissions/{user_id}/filename
-        $path = $file->storeAs(
-            'submissions/' . $request->user()->id,
-            time() . '_' . $originalName,
-            'public'
-        );
+        // Upload trực tiếp lên Cloudinary vào thư mục submissions
+        $uploadedFile = Cloudinary::upload($file->getRealPath(), [
+            'folder' => 'beelearn/submissions/' . $request->user()->id,
+            'resource_type' => 'auto'
+        ]);
 
         return response()->json([
             'message'   => 'Tải tệp thành công!',
-            'file_path' => $path,
+            'file_path' => $uploadedFile->getSecurePath(),
             'file_name' => $originalName,
-            'file_url'  => url('storage/' . $path),
+            'file_url'  => $uploadedFile->getSecurePath(),
         ]);
     }
 
     /**
      * POST /api/upload/lesson-media — Teacher/Admin: upload video or PDF for lesson
-     * Max: 200MB for video, 20MB for documents
      */
     public function uploadLessonMedia(Request $request)
     {
@@ -70,19 +68,18 @@ class FileController extends Controller
             ], 422);
         }
 
-        // Store in: storage/app/public/courses/{course_id}/{type}/filename
-        $folder = "courses/{$courseId}/{$type}s";
-        $path = $file->storeAs(
-            $folder,
-            time() . '_' . $originalName,
-            'public'
-        );
+        // Upload lên Cloudinary
+        $uploadedFile = Cloudinary::upload($file->getRealPath(), [
+            'folder' => "beelearn/courses/{$courseId}/{$type}s",
+            'resource_type' => 'auto'
+        ]);
 
         return response()->json([
             'message'   => 'Tải lên thành công!',
-            'file_path' => $path,
+            'file_path' => $uploadedFile->getSecurePath(),
             'file_name' => $originalName,
-            'file_url'  => url('storage/' . $path),
+            'file_url'  => $uploadedFile->getSecurePath(),
         ]);
     }
 }
+
