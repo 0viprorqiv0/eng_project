@@ -20,17 +20,17 @@ class FileController extends Controller
         $file = $request->file('file');
         $originalName = $file->getClientOriginalName();
 
-        // Upload trực tiếp lên Cloudinary vào thư mục submissions
-        $uploadedFile = Cloudinary::upload($file->getRealPath(), [
-            'folder' => 'beelearn/submissions/' . $request->user()->id,
-            'resource_type' => 'auto'
-        ]);
+        // Reverted to Local Storage
+        $path = "beelearn/submissions/" . $request->user()->id;
+        $file->storeAs("public/{$path}", $originalName);
+
+        $url = asset("storage/{$path}/{$originalName}");
 
         return response()->json([
             'message'   => 'Tải tệp thành công!',
-            'file_path' => $uploadedFile->getSecurePath(),
+            'file_path' => "{$path}/{$originalName}",
             'file_name' => $originalName,
-            'file_url'  => $uploadedFile->getSecurePath(),
+            'file_url'  => $url,
         ]);
     }
 
@@ -68,17 +68,17 @@ class FileController extends Controller
             ], 422);
         }
 
-        // Upload lên Cloudinary
-        $uploadedFile = Cloudinary::upload($file->getRealPath(), [
-            'folder' => "beelearn/courses/{$courseId}/{$type}s",
-            'resource_type' => 'auto'
-        ]);
+        // Reverted to Local Storage
+        $path = "beelearn/courses/{$courseId}/{$type}s";
+        $file->storeAs("public/{$path}", $originalName);
+
+        $url = asset("storage/{$path}/{$originalName}");
 
         return response()->json([
             'message'   => 'Tải lên thành công!',
-            'file_path' => $uploadedFile->getSecurePath(),
+            'file_path' => "{$path}/{$originalName}",
             'file_name' => $originalName,
-            'file_url'  => $uploadedFile->getSecurePath(),
+            'file_url'  => $url,
         ]);
     }
 }

@@ -71,13 +71,31 @@ export function AchievementsPage() {
           
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { name: "Nguyễn Minh Anh", score: "29.5", subject: "Khối D01", school: "Thủ khoa toàn quốc 2023", img: "stu1" },
-              { name: "Trần Đức Nam", score: "8.5", subject: "IELTS Academic", school: "Học bổng 100% RMIT", img: "stu2" },
-              { name: "Lê Thu Hà", score: "10.0", subject: "Tiếng Anh THPT", school: "Á khoa khối A1 Hà Nội", img: "stu3" }
+              {
+                name: "Nguyễn Minh Anh",
+                score: "8.5",
+                subject: "IELTS",
+                school: "ĐH Ngoại Thương",
+                img: "https://images.pexels.com/photos/3616939/pexels-photo-3616939.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop"
+              },
+              {
+                name: "Trần Đức Nam",
+                score: "29.5",
+                subject: "Điểm",
+                school: "ĐH Bách Khoa",
+                img: "https://images.pexels.com/photos/12717733/pexels-photo-12717733.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop"
+              },
+              {
+                name: "Lê Thu Hà",
+                score: "8.0",
+                subject: "IELTS",
+                school: "ĐH Kinh Tế Quốc Dân",
+                img: "https://images.pexels.com/photos/2770972/pexels-photo-2770972.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop"
+              }
             ].map((student, idx) => (
               <div key={idx} className="bg-white rounded-[2.5rem] overflow-hidden shadow-xl border border-gray-100 group">
                 <div className="h-64 overflow-hidden relative">
-                  <img src={`https://picsum.photos/seed/${student.img}/600/400`} alt={student.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
+                  <img src={student.img} alt={student.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer" />
                   <div className="absolute top-4 right-4 bg-beered text-white w-12 h-12 rounded-full flex items-center justify-center shadow-lg">
                     <Trophy size={24} />
                   </div>
@@ -164,7 +182,7 @@ export function AchievementsPage() {
             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 relative">
               <div className="absolute top-10 right-10 text-6xl text-gray-100 font-serif">"</div>
               <div className="flex items-center gap-6 mb-8 relative z-10">
-                <img src="https://picsum.photos/seed/story1/150/150" alt="Student" className="w-24 h-24 rounded-full border-4 border-beered object-cover" referrerPolicy="no-referrer" />
+                <img src="/Screenshot%202026-04-13%20215136.png" alt="Nguyễn Tuấn Anh" className="w-24 h-24 rounded-full border-4 border-beered object-cover" referrerPolicy="no-referrer" />
                 <div>
                   <h3 className="text-2xl font-bold text-navy">Nguyễn Tuấn Anh</h3>
                   <p className="text-beered font-medium">Từ mất gốc đến 8.5 Tiếng Anh THPT</p>
@@ -178,7 +196,7 @@ export function AchievementsPage() {
             <div className="bg-white p-10 rounded-[3rem] shadow-xl border border-gray-100 relative">
               <div className="absolute top-10 right-10 text-6xl text-gray-100 font-serif">"</div>
               <div className="flex items-center gap-6 mb-8 relative z-10">
-                <img src="https://picsum.photos/seed/story2/150/150" alt="Student" className="w-24 h-24 rounded-full border-4 border-beered object-cover" referrerPolicy="no-referrer" />
+                <img src="/Screenshot%202026-04-13%20215124.png" alt="Trần Mai Phương" className="w-24 h-24 rounded-full border-4 border-beered object-cover" referrerPolicy="no-referrer" />
                 <div>
                   <h3 className="text-2xl font-bold text-navy">Trần Mai Phương</h3>
                   <p className="text-beered font-medium">Chinh phục IELTS 7.5 trong 6 tháng</p>

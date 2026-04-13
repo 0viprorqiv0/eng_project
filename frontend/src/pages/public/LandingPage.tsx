@@ -40,67 +40,110 @@ export function LandingPage() {
   return (
     <>
       {/* Hero Section with Submerged Video Background */}
-      <section className="relative min-h-150 lg:min-h-200 flex items-center overflow-hidden bg-navy">
-        {/* Background Video with Blend Mode */}
-        <div className="absolute inset-0 z-0">
-          <video 
-            autoPlay 
-            muted 
-            loop 
-            playsInline 
-            className="w-full h-full object-cover opacity-40 mix-blend-luminosity"
-          >
-            <source src="https://assets.mixkit.co/videos/preview/mixkit-girl-studying-with-a-laptop-and-headphones-40430-large.mp4" type="video/mp4" />
-          </video>
-        </div>
+      <section className="relative pt-6 pb-3 lg:pt-10 lg:pb-5 flex items-center overflow-hidden bg-navy">
+        {/* Deep Navy Background */}
+        <div className="absolute inset-0 bg-navy z-0"></div>
         
         {/* Sophisticated Gradient Overlay */}
         <div className="absolute inset-0 bg-linear-to-r from-navy via-navy/90 to-transparent z-10"></div>
         <div className="absolute inset-0 bg-linear-to-t from-navy via-transparent to-transparent z-10"></div>
         
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20">
           {/* Floating Bees in Hero */}
-          <BeeDecoration className="absolute top-20 right-[10%] opacity-40 hidden lg:block" size={48} delay={0} />
-          <BeeDecoration className="absolute bottom-40 left-[5%] opacity-30 hidden lg:block" size={32} delay={1} />
-          <BeeDecoration className="absolute top-1/2 right-[20%] opacity-20 hidden lg:block" size={40} delay={2} />
+          <BeeDecoration className="absolute top-[15%] left-[6%] opacity-40" size={36} delay={0.5} />
+          <BeeDecoration className="absolute top-[25%] right-[2%] opacity-40" size={48} delay={0} />
+          <BeeDecoration className="absolute bottom-[15%] left-[12%] opacity-30" size={40} delay={1.5} />
+          <BeeDecoration className="absolute top-[45%] right-[8%] opacity-25 hidden md:block" size={44} delay={2.2} />
+          <BeeDecoration className="absolute bottom-[25%] right-[45%] opacity-20 hidden md:block" size={32} delay={3.5} />
+          <BeeDecoration className="absolute top-[35%] left-[40%] opacity-15 hidden lg:block" size={40} delay={1} />
 
-          <div className="max-w-3xl">
+          <div className="grid lg:grid-cols-[1fr_1.4fr] gap-12 lg:gap-16 items-center">
             <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
+              className="relative z-10"
             >
-              <div className="inline-block px-4 py-1.5 bg-beered/20 border border-beered/30 rounded-full text-beered text-sm font-bold mb-6 tracking-wider uppercase">
+              <div className="inline-block px-4 py-1.5 bg-white/5 border border-white/10 rounded-full text-beered text-xs font-bold mb-8 tracking-[0.2em] uppercase">
                 Học viện ngôn ngữ hàng đầu
               </div>
-              <h1 className="text-5xl lg:text-8xl font-extrabold text-white leading-[1.1] mb-8">
-                Chinh Phục <br />
+              <h1 className="text-5xl lg:text-6xl xl:text-[4.5rem] font-extrabold text-white leading-[1.15] mb-8 tracking-tight">
+                Chinh <br />
+                Phục <br />
                 <span className="text-beered">Tiếng Anh</span> <br />
-                Cùng BeeLearn
+                Cùng <br />
+                BeeLearn
               </h1>
-              <p className="text-xl text-gray-300 mb-12 max-w-xl leading-relaxed font-medium">
+              <p className="text-sm lg:text-base text-gray-300 mb-10 max-w-sm leading-relaxed font-medium">
                 Lộ trình học cá nhân hóa, đội ngũ giáo viên tận tâm và môi trường học tập hiện đại giúp bạn tự tin giao tiếp chỉ sau 3 tháng.
               </p>
-              <div className="flex flex-wrap gap-6">
-                <button className="px-12 py-5 bg-beered text-white font-bold rounded-full hover:scale-105 transition-transform shadow-2xl shadow-beered/40 flex items-center gap-3 text-xl">
-                  Khám phá ngay <ChevronRight size={24} />
-                </button>
-                <button 
-                  onClick={() => navigateToCourses()}
-                  className="px-12 py-5 border-2 border-white/30 text-white font-bold rounded-full hover:bg-white hover:text-navy transition-all text-xl backdrop-blur-sm"
-                >
-                  Xem khóa học
-                </button>
-              </div>
-              <div className="mt-16 flex items-center gap-10">
-                <div className="flex -space-x-5">
-                  {[1,2,3,4,5].map(i => (
-                    <img key={i} src={`https://picsum.photos/seed/student${i}/120/120`} className="w-16 h-16 rounded-full border-4 border-navy shadow-2xl" alt="Student" referrerPolicy="no-referrer" />
-                  ))}
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative mt-12 lg:mt-0 flex flex-col items-center lg:items-end w-full"
+            >
+              <div className="relative w-full max-w-2xl">
+                <div className="absolute -inset-6 bg-beered/20 rounded-[3rem] blur-3xl"></div>
+                <div className="relative rounded-[2rem] overflow-hidden border-2 border-white/10 shadow-2xl aspect-video bg-navy group">
+                  <video 
+                    className="w-full h-full object-cover"
+                    controls
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    poster="/study.png"
+                  >
+                    <source src="/Video Project.mp4" type="video/mp4" />
+                    Trình duyệt không hỗ trợ video.
+                  </video>
+                  <div className="absolute inset-0 bg-beered/10 pointer-events-none group-hover:bg-transparent transition-colors"></div>
                 </div>
-                <div className="text-white border-l border-white/20 pl-10">
-                  <p className="text-3xl font-black text-beered">5000+</p>
-                  <p className="text-sm font-bold uppercase tracking-widest opacity-60">Học viên tin tưởng</p>
+              </div>
+              
+              <div className="w-full max-w-2xl flex justify-center lg:justify-end mt-12 lg:pr-4">
+                <div className="flex flex-col items-center gap-8 w-max">
+                  {/* Avatars and Stats */}
+                  <div className="flex items-center gap-6">
+                    <div className="flex -space-x-4">
+                      {[
+                        "https://images.pexels.com/photos/35131346/pexels-photo-35131346.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop",
+                        "https://images.pexels.com/photos/12717733/pexels-photo-12717733.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop",
+                        "https://images.pexels.com/photos/3616939/pexels-photo-3616939.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop",
+                        "https://images.pexels.com/photos/5319510/pexels-photo-5319510.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop",
+                        "https://images.pexels.com/photos/2770972/pexels-photo-2770972.jpeg?auto=compress&cs=tinysrgb&w=120&h=120&fit=crop"
+                      ].map((img, i) => (
+                        <img key={i} src={img} className="w-12 h-12 rounded-full border-[3px] border-navy shadow-lg object-cover" alt="Student" referrerPolicy="no-referrer" />
+                      ))}
+                    </div>
+                    <div className="h-10 w-[1px] bg-white/20"></div>
+                    <div className="text-left text-white">
+                      <p className="text-xl font-black text-beered leading-none mb-1">5000+</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-60">Học viên tin tưởng</p>
+                    </div>
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-4">
+                    <div className="relative group">
+                      <BeeDecoration className="absolute -top-4 -left-4 z-20 group-hover:scale-125 group-hover:-translate-y-2 group-hover:-rotate-12 transition-all duration-300 drop-shadow-lg pointer-events-none" size={28} delay={0.2} />
+                      <button className="px-8 py-3.5 bg-beered text-white font-bold rounded-full hover:scale-105 transition-transform shadow-xl shadow-beered/30 flex items-center gap-2 text-sm">
+                        Khám phá ngay <ChevronRight size={18} />
+                      </button>
+                    </div>
+                    <div className="relative group">
+                      <BeeDecoration className="absolute -bottom-4 -right-4 z-20 opacity-80 group-hover:-translate-y-1 group-hover:rotate-12 transition-all duration-300 drop-shadow-md pointer-events-none" size={24} delay={1.5} />
+                      <button 
+                        onClick={() => navigateToCourses()}
+                        className="px-8 py-3.5 border border-white/30 text-white font-bold rounded-full hover:bg-white hover:text-navy transition-all text-sm backdrop-blur-sm"
+                      >
+                        Xem khóa học
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -210,15 +253,20 @@ export function LandingPage() {
                 {[...Array(2)].map((_, i) => (
                   <React.Fragment key={i}>
                     {[
-                      { name: "Nguyễn Minh Anh", score: "8.5 IELTS", school: "ĐH Ngoại Thương", img: "https://picsum.photos/seed/stu1/400/400" },
-                      { name: "Trần Đức Nam", score: "29.5 Điểm", school: "ĐH Bách Khoa", img: "https://picsum.photos/seed/stu2/400/400" },
-                      { name: "Lê Thu Hà", score: "8.0 IELTS", school: "ĐH Kinh Tế Quốc Dân", img: "https://picsum.photos/seed/stu3/400/400" },
-                      { name: "Phạm Hoàng Long", score: "9.8 Tiếng Anh", school: "THPT Chuyên HN-Amsterdam", img: "https://picsum.photos/seed/stu4/400/400" },
-                      { name: "Vũ Phương Thảo", score: "8.5 IELTS", school: "ĐH Ngoại Ngữ", img: "https://picsum.photos/seed/stu5/400/400" },
-                      { name: "Đặng Tiến Dũng", score: "28.75 Điểm", school: "ĐH Y Hà Nội", img: "https://picsum.photos/seed/stu6/400/400" }
+                      { name: "Nguyễn Minh Anh", score: "8.5 IELTS", school: "ĐH Ngoại Thương", img: "https://images.pexels.com/photos/3616939/pexels-photo-3616939.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop" },
+                      { name: "Trần Đức Nam", score: "29.5 Điểm", school: "ĐH Bách Khoa", img: "https://images.pexels.com/photos/12717733/pexels-photo-12717733.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop" },
+                      { name: "Lê Thu Hà", score: "8.0 IELTS", school: "ĐH Kinh Tế Quốc Dân", img: "https://images.pexels.com/photos/2770972/pexels-photo-2770972.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop" },
+                      { name: "Phạm Hoàng Long", score: "9.8 Tiếng Anh", school: "THPT Chuyên HN-Amsterdam", img: "https://images.pexels.com/photos/5319510/pexels-photo-5319510.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop" },
+                      { name: "Vũ Phương Thảo", score: "8.5 IELTS", school: "ĐH Ngoại Ngữ", img: "https://images.pexels.com/photos/7667086/pexels-photo-7667086.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop" },
+                      { name: "Đặng Tiến Dũng", score: "28.75 Điểm", school: "ĐH Y Hà Nội", img: "https://images.pexels.com/photos/9602115/pexels-photo-9602115.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop" }
                     ].map((student, idx) => (
-                      <div key={idx} className="bg-gray-50 rounded-3xl overflow-hidden shadow-lg border border-gray-100 shrink-0">
-                        <img src={student.img} alt={student.name} className="w-full h-40 object-cover" referrerPolicy="no-referrer" />
+                      <div key={idx} className="bg-gray-50 rounded-3xl overflow-hidden shadow-lg border border-gray-100 shrink-0 group">
+                        <img
+                          src={student.img}
+                          alt={student.name}
+                          className="w-full h-40 object-cover bg-gray-100 transition-all duration-700 ease-out group-hover:h-100 group-hover:object-contain"
+                          referrerPolicy="no-referrer"
+                        />
                         <div className="p-6 text-center">
                           <h4 className="font-bold text-navy text-lg">{student.name}</h4>
                           <p className="text-beered font-black text-2xl my-2">{student.score}</p>
@@ -241,15 +289,20 @@ export function LandingPage() {
                 {[...Array(2)].map((_, i) => (
                   <React.Fragment key={i}>
                     {[
-                      { name: "Hoàng Minh Đức", score: "8.0 IELTS", school: "ĐH FPT", img: "https://picsum.photos/seed/stu7/400/400" },
-                      { name: "Nguyễn Bảo Ngọc", score: "9.6 Tiếng Anh", school: "THPT Chu Văn An", img: "https://picsum.photos/seed/stu8/400/400" },
-                      { name: "Trần Thanh Tâm", score: "8.5 IELTS", school: "ĐH RMIT", img: "https://picsum.photos/seed/stu9/400/400" },
-                      { name: "Lê Văn Tùng", score: "29.0 Điểm", school: "ĐH Dược Hà Nội", img: "https://picsum.photos/seed/stu10/400/400" },
-                      { name: "Phạm Thùy Chi", score: "8.0 IELTS", school: "ĐH Luật", img: "https://picsum.photos/seed/stu11/400/400" },
-                      { name: "Ngô Quốc Anh", score: "9.4 Tiếng Anh", school: "THPT Kim Liên", img: "https://picsum.photos/seed/stu12/400/400" }
+                      { name: "Hoàng Minh Đức", score: "8.0 IELTS", school: "ĐH FPT", img: "https://images.pexels.com/photos/7417185/pexels-photo-7417185.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop" },
+                      { name: "Nguyễn Bảo Ngọc", score: "9.6 Tiếng Anh", school: "THPT Chu Văn An", img: "https://images.pexels.com/photos/33758137/pexels-photo-33758137.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop" },
+                      { name: "Trần Thanh Tâm", score: "8.5 IELTS", school: "ĐH RMIT", img: "https://images.pexels.com/photos/27059202/pexels-photo-27059202.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop" },
+                      { name: "Lê Văn Tùng", score: "29.0 Điểm", school: "ĐH Dược Hà Nội", img: "https://images.pexels.com/photos/6754845/pexels-photo-6754845.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop" },
+                      { name: "Phạm Thùy Chi", score: "7.0 IELTS", school: "THCS Nghĩa Tân", img: "https://images.pexels.com/photos/35108649/pexels-photo-35108649.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop" },
+                      { name: "Nguyễn Kim Anh", score: "9.4 Tiếng Anh", school: "THPT Kim Liên", img: "https://images.pexels.com/photos/7121557/pexels-photo-7121557.jpeg?auto=compress&cs=tinysrgb&w=400&h=400&fit=crop" }
                     ].map((student, idx) => (
-                      <div key={idx} className="bg-gray-50 rounded-3xl overflow-hidden shadow-lg border border-gray-100 shrink-0">
-                        <img src={student.img} alt={student.name} className="w-full h-40 object-cover" referrerPolicy="no-referrer" />
+                      <div key={idx} className="bg-gray-50 rounded-3xl overflow-hidden shadow-lg border border-gray-100 shrink-0 group">
+                        <img
+                          src={student.img}
+                          alt={student.name}
+                          className="w-full h-40 object-cover bg-gray-100 transition-all duration-700 ease-out group-hover:h-100 group-hover:object-contain"
+                          referrerPolicy="no-referrer"
+                        />
                         <div className="p-6 text-center">
                           <h4 className="font-bold text-navy text-lg">{student.name}</h4>
                           <p className="text-beered font-black text-2xl my-2">{student.score}</p>
@@ -285,16 +338,16 @@ export function LandingPage() {
               {[...Array(2)].map((_, i) => (
                 <React.Fragment key={i}>
                   {[
-                    { name: "Chị Mai Lan", role: "Phụ huynh", text: "Tôi rất yên tâm khi cho con theo học tại BeeLearn. Lộ trình học rõ ràng, giáo viên rất sát sao.", img: "parent1" },
-                    { name: "Bạn Minh Tú", role: "Học viên IELTS 7.5", text: "Phương pháp học tại đây cực kỳ hiệu quả, đặc biệt là các buổi luyện Speaking 1-1.", img: "student5" },
-                    { name: "Anh Hoàng Bách", role: "Phụ huynh", text: "Con tôi từ một đứa trẻ sợ tiếng Anh giờ đã rất tự tin giao tiếp. Cảm ơn BeeLearn.", img: "parent2" },
-                    { name: "Chị Thu Thủy", role: "Phụ huynh", text: "Trung tâm có môi trường học tập rất chuyên nghiệp, con tôi tiến bộ vượt bậc.", img: "parent3" },
-                    { name: "Bạn Đức Anh", role: "Học viên 9.5 THPT", text: "Tài liệu ôn thi cực kỳ sát thực tế, giúp mình tự tin hơn rất nhiều khi đi thi.", img: "student6" },
-                    { name: "Chị Ngọc Diệp", role: "Phụ huynh", text: "Đội ngũ tư vấn nhiệt tình, luôn lắng nghe và hỗ trợ phụ huynh kịp thời.", img: "parent4" },
-                    { name: "Bạn Phương Linh", role: "Học viên IELTS 8.0", text: "Môi trường học tập năng động, giúp mình không còn ngại ngùng khi nói tiếng Anh.", img: "student7" },
-                    { name: "Anh Minh Quân", role: "Phụ huynh", text: "Chất lượng giảng dạy xứng đáng với chi phí bỏ ra. Rất hài lòng!", img: "parent5" },
-                    { name: "Chị Thanh Hương", role: "Phụ huynh", text: "Con mình rất thích đi học ở BeeLearn vì các bài giảng luôn thú vị.", img: "parent6" },
-                    { name: "Bạn Tuấn Kiệt", role: "Học viên 28.5 điểm", text: "Cảm ơn các thầy cô đã luôn đồng hành và động viên mình trong giai đoạn nước rút.", img: "student8" }
+                    { name: "Chị Mai Lan", role: "Phụ huynh", text: "Tôi rất yên tâm khi cho con theo học tại BeeLearn. Lộ trình học rõ ràng, giáo viên rất sát sao.", img: "https://images.pexels.com/photos/35341074/pexels-photo-35341074.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" },
+                    { name: "Bạn Minh Tú", role: "Học viên IELTS 7.5", text: "Phương pháp học tại đây cực kỳ hiệu quả, đặc biệt là các buổi luyện Speaking 1-1.", img: "https://images.pexels.com/photos/31981457/pexels-photo-31981457.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" },
+                    { name: "Anh Hoàng Bách", role: "Phụ huynh", text: "Con tôi từ một đứa trẻ sợ tiếng Anh giờ đã rất tự tin giao tiếp. Cảm ơn BeeLearn.", img: "https://images.pexels.com/photos/2955792/pexels-photo-2955792.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" },
+                    { name: "Chị Thu Thủy", role: "Phụ huynh", text: "Trung tâm có môi trường học tập rất chuyên nghiệp, con tôi tiến bộ vượt bậc.", img: "https://images.pexels.com/photos/35108638/pexels-photo-35108638.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" },
+                    { name: "Bạn Đức Anh", role: "Học viên 9.5 THPT", text: "Tài liệu ôn thi cực kỳ sát thực tế, giúp mình tự tin hơn rất nhiều khi đi thi.", img: "https://images.pexels.com/photos/36507127/pexels-photo-36507127.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" },
+                    { name: "Chị Ngọc Diệp", role: "Phụ huynh", text: "Đội ngũ tư vấn nhiệt tình, luôn lắng nghe và hỗ trợ phụ huynh kịp thời.", img: "https://images.pexels.com/photos/35108631/pexels-photo-35108631.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" },
+                    { name: "Bạn Phương Linh", role: "Học viên IELTS 8.0", text: "Môi trường học tập năng động, giúp mình không còn ngại ngùng khi nói tiếng Anh.", img: "https://images.pexels.com/photos/35131346/pexels-photo-35131346.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" },
+                    { name: "Anh Minh Quân", role: "Phụ huynh", text: "Chất lượng giảng dạy xứng đáng với chi phí bỏ ra. Rất hài lòng!", img: "https://images.pexels.com/photos/29585803/pexels-photo-29585803.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" },
+                    { name: "Chị Thanh Hương", role: "Phụ huynh", text: "Con mình rất thích đi học ở BeeLearn vì các bài giảng luôn thú vị.", img: "https://images.pexels.com/photos/35108646/pexels-photo-35108646.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" },
+                    { name: "Bạn Tuấn Kiệt", role: "Học viên 28.5 điểm", text: "Cảm ơn các thầy cô đã luôn đồng hành và động viên mình trong giai đoạn nước rút.", img: "https://images.pexels.com/photos/33970125/pexels-photo-33970125.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" }
                   ].map((item, idx) => (
                     <div key={idx} className="bg-white/5 backdrop-blur-md border border-white/10 p-8 rounded-[2.5rem] relative w-100 shrink-0">
                       <div className="text-beered mb-6">
@@ -302,7 +355,7 @@ export function LandingPage() {
                       </div>
                       <p className="text-gray-300 italic mb-8 leading-relaxed h-24 overflow-hidden">"{item.text}"</p>
                       <div className="flex items-center gap-4">
-                        <img src={`https://picsum.photos/seed/${item.img}/100/100`} alt={item.name} className="w-12 h-12 rounded-full border-2 border-beered" referrerPolicy="no-referrer" />
+                        <img src={item.img} alt={item.name} className="w-12 h-12 rounded-full border-2 border-beered object-cover" referrerPolicy="no-referrer" />
                         <div>
                           <h4 className="font-bold text-white">{item.name}</h4>
                           <p className="text-beered text-xs font-medium">{item.role}</p>
@@ -331,17 +384,22 @@ export function LandingPage() {
             {[...Array(3)].map((_, i) => (
               <React.Fragment key={i}>
                 {[
-                  "ĐH Ngoại Thương", 
-                  "ĐH Bách Khoa Hà Nội", 
-                  "ĐH Kinh Tế Quốc Dân", 
-                  "THPT Chuyên Hà Nội - Amsterdam", 
-                  "THPT Chu Văn An"
+                  { name: "ĐH Ngoại Thương", logo: "/ftu.png.png" },
+                  { name: "ĐH Bách Khoa Hà Nội", logo: "/Logo_Đại_học_Bách_Khoa_Hà_Nội.png" },
+                  { name: "ĐH Kinh Tế Quốc Dân", logo: "/logo-neu-inkythuatso-01-09-10-41-01.jpg" },
+                  { name: "THPT Chuyên Hà Nội - Amsterdam", logo: "/Logo_THPT_Chuyên_Hà_Nội_-_Amsterdam.svg.png" },
+                  { name: "THPT Chu Văn An", logo: "/logo-truong-thpt-chu-van-an.jpg" }
                 ].map((partner, idx) => (
-                  <div key={idx} className="flex items-center gap-4 grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all cursor-pointer">
-                    <div className="w-12 h-12 bg-navy rounded-xl flex items-center justify-center text-white font-bold text-xs">
-                      {partner.split(' ').map(w => w[0]).join('')}
+                  <div key={idx} className="flex items-center gap-4 transition-transform duration-300 hover:-translate-y-0.5 cursor-pointer">
+                    <div className="w-14 h-14 bg-white rounded-xl border border-gray-100 shadow-sm p-2 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={partner.logo}
+                        alt={partner.name}
+                        className="w-full h-full object-contain"
+                        referrerPolicy="no-referrer"
+                      />
                     </div>
-                    <span className="text-xl font-bold text-navy">{partner}</span>
+                    <span className="text-xl font-bold text-navy">{partner.name}</span>
                   </div>
                 ))}
               </React.Fragment>
@@ -441,7 +499,7 @@ export function LandingPage() {
             <div className="relative">
               <div className="absolute -inset-4 bg-beered/5 rounded-[3rem] blur-2xl"></div>
               <img 
-                src="https://picsum.photos/seed/eco/800/800" 
+                src="/hesinhthaihoctienganh.png" 
                 alt="Ecosystem" 
                 className="relative rounded-[3rem] shadow-2xl z-10"
                 referrerPolicy="no-referrer"

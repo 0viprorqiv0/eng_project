@@ -18,7 +18,7 @@ export function AboutPage() {
     <div className="pt-20">
       {/* Hero About */}
       <section className="relative py-32 bg-navy overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/about/1920/1080')] opacity-20 bg-cover bg-center mix-blend-luminosity"></div>
+        <div className="absolute inset-0 bg-[url('/about_hero.png')] opacity-20 bg-cover bg-center mix-blend-luminosity"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-navy to-transparent"></div>
         <BeeDecoration className="absolute top-20 right-20 opacity-30" size={60} delay={0} />
         <BeeDecoration className="absolute bottom-20 left-20 opacity-20" size={40} delay={1.5} />
@@ -44,7 +44,7 @@ export function AboutPage() {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="relative">
               <div className="absolute -inset-4 bg-beered/5 rounded-[3rem] blur-2xl"></div>
-              <img src="https://picsum.photos/seed/story/800/1000" alt="Our Story" className="relative rounded-[3rem] shadow-2xl" referrerPolicy="no-referrer" />
+              <img src="/story.png" alt="Our Story" className="relative rounded-[3rem] shadow-2xl" />
               <div className="absolute -bottom-10 -right-10 bg-navy p-10 rounded-[2.5rem] text-white shadow-2xl hidden md:block border border-white/10">
                 <p className="text-5xl font-black text-beered mb-2">10+</p>
                 <p className="font-bold uppercase tracking-wider text-sm">Năm kinh nghiệm</p>
@@ -80,7 +80,7 @@ export function AboutPage() {
               Chào các bạn, tôi là người sáng lập BeeLearn. Khi bắt đầu hành trình này, tôi chỉ có một ước mơ giản dị: giúp các em học sinh không còn sợ môn Tiếng Anh. Hôm nay, nhìn thấy hàng ngàn học viên tự tin thuyết trình, đạt điểm cao trong các kỳ thi quốc tế và giành học bổng du học, tôi biết chúng tôi đang đi đúng hướng. BeeLearn cam kết sẽ luôn là người bạn đồng hành đáng tin cậy nhất trên con đường chinh phục tri thức của các bạn.
             </p>
             <div className="flex items-center justify-center gap-4">
-              <img src="https://picsum.photos/seed/founder/100/100" alt="Founder" className="w-16 h-16 rounded-full border-2 border-beered" referrerPolicy="no-referrer" />
+              <img src="/founder.png" alt="Founder" className="w-16 h-16 rounded-full border-2 border-beered" />
               <div className="text-left">
                 <p className="font-bold text-navy text-lg">Nguyễn Văn A</p>
                 <p className="text-beered text-sm font-medium">Founder & CEO BeeLearn</p>
@@ -188,8 +188,8 @@ export function AboutPage() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-6">
-              <img src="https://picsum.photos/seed/diff1/400/600" alt="Classroom" className="rounded-[2rem] shadow-lg mt-12" referrerPolicy="no-referrer" />
-              <img src="https://picsum.photos/seed/diff2/400/600" alt="Students" className="rounded-[2rem] shadow-lg" referrerPolicy="no-referrer" />
+              <img src="/classroom_about.png" alt="Classroom" className="rounded-[2rem] shadow-lg mt-12" />
+              <img src="/students_about.png" alt="Students" className="rounded-[2rem] shadow-lg" />
             </div>
           </div>
         </div>
@@ -197,7 +197,7 @@ export function AboutPage() {
 
       {/* CTA Section */}
       <section className="py-24 bg-beered text-white text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/cta/1920/1080')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
+        <div className="absolute inset-0 bg-[url('/about_hero.png')] opacity-10 bg-cover bg-center mix-blend-overlay"></div>
         <BeeDecoration className="absolute top-10 left-10 opacity-20" size={50} delay={0} />
         <BeeDecoration className="absolute bottom-10 right-10 opacity-20" size={70} delay={2} />
         <div className="max-w-4xl mx-auto px-4 relative z-10">
