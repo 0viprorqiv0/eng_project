@@ -204,7 +204,7 @@ export function RegisterPage() {
                         <CheckCircle size={14} className="absolute top-0.5 left-0.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
                       </div>
                       <span className="text-xs text-gray-500 leading-relaxed pt-0.5 group-hover:text-gray-700 transition-colors">
-                         Tôi đồng ý với <a href="#" className="font-bold underline text-navy">Điều khoản dịch vụ</a> và <a href="#" className="font-bold underline text-navy">Chính sách bảo mật</a> của BeeLearn.
+                         Tôi đồng ý với <Link to="/terms" className="font-bold underline text-navy">Điều khoản dịch vụ</Link> và <Link to="/privacy" className="font-bold underline text-navy">Chính sách bảo mật</Link> của BeeLearn.
                       </span>
                    </label>
 
@@ -214,24 +214,7 @@ export function RegisterPage() {
                 </form>
 
                 <div className="mt-8">
-                   <div className="relative flex py-2 items-center">
-                      <div className="flex-grow border-t border-gray-200"></div>
-                      <span className="flex-shrink-0 mx-4 text-gray-400 text-xs font-bold uppercase tracking-widest">Hoặc đăng ký bằng</span>
-                      <div className="flex-grow border-t border-gray-200"></div>
-                   </div>
-
-                   <div className="grid grid-cols-2 gap-4 mt-4">
-                      <button className="flex items-center justify-center gap-2 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors shadow-sm font-bold text-sm text-gray-700">
-                         <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-5 h-5" alt="Google" />
-                         Google
-                      </button>
-                      <button className="flex items-center justify-center gap-2 py-3 border border-gray-200 rounded-xl hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2] transition-colors shadow-sm font-bold text-sm text-gray-700 group">
-                         <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" className="w-5 h-5 group-hover:brightness-0 group-hover:invert transition opacity-80" alt="Facebook" />
-                         Facebook
-                      </button>
-                   </div>
-                   
-                   <p className="mt-6 text-center text-sm text-gray-500">
+                   <p className="text-center text-sm text-gray-500">
                      Đã có tài khoản? <Link to="/login" className="font-bold text-[#9f0009] hover:underline">Đăng nhập ngay</Link>
                    </p>
                 </div>

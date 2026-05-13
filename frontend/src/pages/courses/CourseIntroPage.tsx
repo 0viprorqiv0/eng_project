@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useParams, Link } from 'react-router-dom';
 import { api } from '../../lib/api';
+import { useAuth } from '../../components/AuthContext';
 import { BeeDecoration } from '../../components/BeeDecoration';
 import { 
   ShieldCheck, Clock, Users, Play, CheckCircle2, BookOpen, 
@@ -11,9 +12,27 @@ import {
 
 export function CourseIntroPage() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [openStep, setOpenStep] = useState<number>(0);
   const [course, setCourse] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+
+  useEffect(() => {
+    const checkEnrollment = async () => {
+      if (user && user.role === 'student') {
+        try {
+          const res = await api.get('/my-courses');
+          if (res.some((c: any) => c.id === Number(id))) {
+            setIsEnrolled(true);
+          }
+        } catch (e) {
+          console.error('Failed to parse enrollment', e);
+        }
+      }
+    };
+    checkEnrollment();
+  }, [user, id]);
 
   // Animation variants
   const fadeInUp = {
@@ -118,10 +137,7 @@ export function CourseIntroPage() {
             style={{ perspective: 1200 }}
             className="lg:col-span-5 lg:sticky lg:top-32 relative z-20"
           >
-            <motion.div 
-              whileHover={{ scale: 1.02, rotateX: 3, rotateY: -3 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              style={{ transformStyle: "preserve-3d" }}
+            <div 
               className="bg-surface-container-lowest rounded-2xl p-8 shadow-[0_32px_64px_-16px_rgba(0,33,67,0.08)] border border-outline-variant/10"
             >
               <div className="relative rounded-xl overflow-hidden mb-6 aspect-video group">
@@ -144,18 +160,29 @@ export function CourseIntroPage() {
                 </div>
                 
                 <div className="space-y-4">
-                  <Link 
-                    to="/register"
-                    className="w-full py-4 bg-primary text-white font-bold text-lg rounded-xl hover:bg-[#DF312B] transition-colors shadow-lg shadow-primary/10 active:scale-95 text-center block"
-                  >
-                    Đăng ký ngay
-                  </Link>
-                  <Link 
-                    to={`/course/${id || 'c1'}`}
-                    className="w-full py-4 border-2 border-primary/10 text-primary font-bold text-lg rounded-xl hover:bg-surface-container-low transition-all text-center block"
-                  >
-                    Học thử miễn phí
-                  </Link>
+                  {(isEnrolled || user?.role === 'admin' || user?.role === 'teacher') ? (
+                    <Link 
+                      to={`/course/${id}`}
+                      className="w-full py-4 bg-green-600 text-white font-bold text-lg rounded-xl hover:bg-green-700 transition-colors shadow-lg shadow-green-600/20 active:scale-95 text-center block"
+                    >
+                      {user?.role === 'student' ? 'Đã đăng ký / Tiếp tục học' : 'Vào lớp học'}
+                    </Link>
+                  ) : (
+                    <>
+                      <Link 
+                        to="/register"
+                        className="w-full py-4 bg-primary text-white font-bold text-lg rounded-xl hover:bg-[#DF312B] transition-colors shadow-lg shadow-primary/10 active:scale-95 text-center block"
+                      >
+                        Đăng ký ngay
+                      </Link>
+                      <Link 
+                        to={`/course/${id}`}
+                        className="w-full py-4 border-2 border-primary/10 text-primary font-bold text-lg rounded-xl hover:bg-surface-container-low transition-all text-center block"
+                      >
+                        Học thử miễn phí
+                      </Link>
+                    </>
+                  )}
                 </div>
                 
                 <ul className="space-y-3 pt-4 border-t border-outline-variant/20">
@@ -173,7 +200,7 @@ export function CourseIntroPage() {
                   </li>
                 </ul>
               </div>
-            </motion.div>
+            </div>
           </motion.div>
         </div>
 

@@ -55,6 +55,12 @@ class AuthController extends Controller
             ]);
         }
 
+        if ($user->banned_until && now()->lt($user->banned_until)) {
+            throw ValidationException::withMessages([
+                'email' => ['Tài khoản của bạn đã bị khóa đến ' . $user->banned_until->format('d/m/Y H:i')],
+            ]);
+        }
+
         // Xóa token cũ (optional — single device)
         $user->tokens()->delete();
 

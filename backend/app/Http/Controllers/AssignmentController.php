@@ -54,20 +54,22 @@ class AssignmentController extends Controller
                 }
 
                 return [
-                    'id'            => $a->id,
-                    'title'         => $a->title,
-                    'course'        => $a->course->title,
-                    'due'           => $a->due_date->format('d/m/Y'),
-                    'status'        => $status,
-                    'score'         => $score,
-                    'score_raw'     => $submission?->score,
-                    'max_score'     => $a->max_score,
-                    'icon'          => $a->icon,
-                    'submission_id' => $submissionId,
-                    'feedback'      => $feedback,
-                    'file_url'      => $fileUrl,
-                    'graded_at'     => $gradedAt,
-                    'description'   => $a->description,
+                    'id'               => $a->id,
+                    'title'            => $a->title,
+                    'course'           => $a->course->title,
+                    'due'              => $a->due_date->format('d/m/Y'),
+                    'status'           => $status,
+                    'score'            => $score,
+                    'score_raw'        => $submission?->score,
+                    'max_score'        => $a->max_score,
+                    'icon'             => $a->icon,
+                    'submission_id'    => $submissionId,
+                    'feedback'         => $feedback,
+                    'file_url'         => $fileUrl,
+                    'teacher_file_url' => $a->file_url,
+                    'teacher_file_name'=> $a->file_name,
+                    'graded_at'        => $gradedAt,
+                    'description'      => $a->description,
                 ];
             });
 
@@ -146,12 +148,30 @@ class AssignmentController extends Controller
             'icon'        => 'nullable|string|max:50',
             'due_date'    => 'required|date',
             'max_score'   => 'nullable|integer|min:1',
+            'file_url'    => 'nullable|string',
+            'file_name'   => 'nullable|string',
         ]);
 
         $assignment = Assignment::create([
             ...$validated,
             'teacher_id' => $request->user()->id,
         ]);
+
+        // Notify enrolled students
+        $course = $assignment->course;
+        if ($course) {
+            $studentIds = $course->enrollments()->pluck('user_id');
+            foreach ($studentIds as $studentId) {
+                \App\Models\Notification::notify(
+                    $studentId,
+                    'assignment',
+                    'Bài tập mới',
+                    "Khóa học \"{$course->title}\" vừa có bài tập mới: {$assignment->title}.",
+                    '/dashboard/assignments',
+                    'assignment'
+                );
+            }
+        }
 
         return response()->json($assignment, 201);
     }
@@ -172,6 +192,8 @@ class AssignmentController extends Controller
             'icon'        => 'nullable|string|max:50',
             'due_date'    => 'sometimes|date',
             'max_score'   => 'nullable|integer|min:1',
+            'file_url'    => 'nullable|string',
+            'file_name'   => 'nullable|string',
         ]);
 
         $assignment->update($validated);
@@ -222,6 +244,16 @@ class AssignmentController extends Controller
                 'file_url'     => $validated['file_url'] ?? $existing->file_url,
                 'submitted_at' => now(),
             ]);
+
+            \App\Models\Notification::notify(
+                $assignment->teacher_id, 
+                'assignment', 
+                'Cập nhật bài nộp', 
+                "Học viên {$user->name} vừa cập nhật bài nộp: {$assignment->title}.",
+                null, 
+                'update'
+            );
+
             return response()->json([
                 'message'    => 'Đã cập nhật bài nộp!',
                 'submission' => $existing,
@@ -235,6 +267,15 @@ class AssignmentController extends Controller
             'file_url'      => $validated['file_url'] ?? null,
         ]);
 
+        \App\Models\Notification::notify(
+            $assignment->teacher_id, 
+            'assignment', 
+            'Bài nộp mới', 
+            "Học viên {$user->name} đã nộp bài tập: {$assignment->title}.",
+            null, 
+            'upload_file'
+        );
+
         return response()->json([
             'message'    => 'Nộp bài thành công!',
             'submission' => $submission,
@@ -246,29 +287,38 @@ class AssignmentController extends Controller
      */
     public function getSubmissions(Request $request, Assignment $assignment)
     {
-        $submissions = Submission::where('assignment_id', $assignment->id)
-            ->with('student:id,name,email,avatar_url')
-            ->orderByDesc('submitted_at')
-            ->get()
-            ->map(function ($s) use ($assignment) {
-                return [
-                    'id'           => $s->id,
-                    'student'      => [
-                        'id'         => $s->student->id,
-                        'name'       => $s->student->name,
-                        'email'      => $s->student->email,
-                        'avatar_url' => $s->student->avatar_url,
-                    ],
-                    'content'      => $s->content,
-                    'file_url'     => $s->file_url,
-                    'score'        => $s->score,
-                    'max_score'    => $assignment->max_score,
-                    'feedback'     => $s->feedback,
-                    'status'       => $s->status,
-                    'submitted_at' => $s->submitted_at?->format('d/m/Y H:i'),
-                    'graded_at'    => $s->graded_at?->format('d/m/Y H:i'),
-                ];
-            });
+        // 1. Get all students enrolled in this course
+        $enrolledStudents = $assignment->course->students;
+        
+        // 2. Get all existing submissions for this assignment
+        $submissions = Submission::where('assignment_id', $assignment->id)->get()->keyBy('student_id');
+
+        $data = $enrolledStudents->map(function ($student) use ($assignment, $submissions) {
+            $s = $submissions->get($student->id);
+            
+            return [
+                'id'           => $s?->id,
+                'student'      => [
+                    'id'         => $student->id,
+                    'name'       => $student->name,
+                    'email'      => $student->email,
+                    'avatar_url' => $student->avatar_url,
+                ],
+                'content'      => $s?->content,
+                'file_url'     => $s?->file_url,
+                'score'        => $s?->score,
+                'max_score'    => $assignment->max_score,
+                'feedback'     => $s?->feedback,
+                'status'       => $s?->status ?? 'pending', // 'pending' if not submitted
+                'submitted_at' => $s?->submitted_at?->format('d/m/Y H:i'),
+                'graded_at'    => $s?->graded_at?->format('d/m/Y H:i'),
+            ];
+        });
+
+        // Sort: Submitted first, then by date (most recent)
+        $sortedData = $data->sortByDesc(function($item) {
+            return $item['submitted_at'] ? 1 : 0;
+        })->values();
 
         return response()->json([
             'assignment' => [
@@ -278,11 +328,12 @@ class AssignmentController extends Controller
                 'max_score' => $assignment->max_score,
                 'due_date'  => $assignment->due_date->format('d/m/Y'),
             ],
-            'submissions' => $submissions,
+            'submissions' => $sortedData,
             'stats'       => [
-                'total'       => $submissions->count(),
+                'total'       => $enrolledStudents->count(),
+                'submitted'   => $submissions->count(),
                 'graded'      => $submissions->where('status', 'graded')->count(),
-                'pending'     => $submissions->where('status', 'submitted')->count(),
+                'pending'     => $submissions->where('status', 'submitted')->count() + ($enrolledStudents->count() - $submissions->count()),
             ],
         ]);
     }
@@ -340,6 +391,15 @@ class AssignmentController extends Controller
             'status'    => 'graded',
             'graded_at' => now(),
         ]);
+
+        \App\Models\Notification::notify(
+            $submission->student_id, 
+            'assignment', 
+            'Đã có điểm bài tập', 
+            "Giảng viên đã chấm điểm bài tập '{$assignment->title}'. Điểm của bạn: {$validated['score']}/{$assignment->max_score}.",
+            null, 
+            'fact_check'
+        );
 
         return response()->json([
             'message'    => 'Đã chấm điểm thành công!',

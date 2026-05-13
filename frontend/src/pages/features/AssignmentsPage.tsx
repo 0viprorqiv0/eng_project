@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../components/AuthContext';
 import { api } from '../../lib/api';
 import { FileUpload } from '../../components/FileUpload';
-
+import { StudentSubmitBox } from './components/StudentSubmitBox';
+import { StudentFeedbackViewer } from './components/StudentFeedbackViewer';
+import { TeacherMarkingBoard } from './components/TeacherMarkingBoard';
 export function AssignmentsPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const role = user?.role || 'student';
 
   const [assignments, setAssignments] = useState<any[]>([]);
@@ -13,23 +17,13 @@ export function AssignmentsPage() {
   
   const [filter, setFilter] = useState('Tất cả');
   const [selectedAssignment, setSelectedAssignment] = useState<any|null>(null);
-  const [submitText, setSubmitText] = useState('');
-  const [uploadedFile, setUploadedFile] = useState<{file_path: string; file_name: string; file_url: string} | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   
-  // Teacher grading state
-  const [gradingAssignment, setGradingAssignment] = useState<any|null>(null);
-  const [submissions, setSubmissions] = useState<any[]>([]);
-  const [submissionStats, setSubmissionStats] = useState<any>({});
-  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
-  const [activeSubmission, setActiveSubmission] = useState<any|null>(null);
-  const [gradeScore, setGradeScore] = useState('');
-  const [gradeFeedback, setGradeFeedback] = useState('');
-  const [gradingInProgress, setGradingInProgress] = useState(false);
-
   // Student feedback state
   const [feedbackData, setFeedbackData] = useState<any|null>(null);
   const [loadingFeedback, setLoadingFeedback] = useState(false);
+
+  // Teacher grading state
+  const [gradingAssignment, setGradingAssignment] = useState<any|null>(null);
 
   // Teacher CRUD state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -62,73 +56,9 @@ export function AssignmentsPage() {
     }
   }, []);
 
-  const handleSubmitAssignment = async () => {
-    if(!submitText.trim() && !uploadedFile) return;
-    setSubmitting(true);
-    try {
-      await api.post(`/assignments/${selectedAssignment.id}/submit`, {
-        content: submitText.trim() || null,
-        file_url: uploadedFile?.file_url || null,
-      });
-      setAssignments(prev => prev.map(a => 
-        a.id === selectedAssignment.id ? { ...a, status: 'Đã nộp' } : a
-      ));
-      if (stats.notSubmitted > 0) {
-        setStats((prev: any) => ({ ...prev, notSubmitted: prev.notSubmitted - 1, submitted: prev.submitted + 1 }));
-      }
-      setSelectedAssignment(null);
-      setSubmitText('');
-      setUploadedFile(null);
-    } catch (err: any) {
-      alert(err?.message || 'Nộp bài thất bại. Vui lòng thử lại.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   // Teacher: Load submissions for an assignment
-  const handleOpenGrading = async (assignment: any) => {
+  const handleOpenGrading = (assignment: any) => {
     setGradingAssignment(assignment);
-    setLoadingSubmissions(true);
-    setActiveSubmission(null);
-    try {
-      const res = await api.get(`/assignments/${assignment.id}/submissions`);
-      if (res) {
-        setSubmissions(res.submissions || []);
-        setSubmissionStats(res.stats || {});
-      }
-    } catch (err) {
-      console.error('Failed to load submissions:', err);
-    } finally {
-      setLoadingSubmissions(false);
-    }
-  };
-
-  // Teacher: Grade a submission
-  const handleGradeSubmission = async () => {
-    if (!activeSubmission || !gradeScore) return;
-    setGradingInProgress(true);
-    try {
-      await api.put(`/assignments/${gradingAssignment.id}/grade/${activeSubmission.id}`, {
-        score: parseFloat(gradeScore),
-        feedback: gradeFeedback.trim() || null,
-      });
-      // Refresh submissions list
-      const res = await api.get(`/assignments/${gradingAssignment.id}/submissions`);
-      if (res) {
-        setSubmissions(res.submissions || []);
-        setSubmissionStats(res.stats || {});
-      }
-      // Refresh main assignments list
-      fetchAssignments();
-      setActiveSubmission(null);
-      setGradeScore('');
-      setGradeFeedback('');
-    } catch (err: any) {
-      alert(err?.message || 'Chấm điểm thất bại. Vui lòng thử lại.');
-    } finally {
-      setGradingInProgress(false);
-    }
   };
 
   // Student: Load feedback for an assignment
@@ -201,7 +131,14 @@ export function AssignmentsPage() {
     setEditingAssignment(a);
   };
 
+  const location = useLocation();
+  const initialCourseId = location.state?.courseId;
+
   const filteredAssignments = assignments.filter(a => {
+    // Priority 1: Filter by courseId from navigation state
+    if (initialCourseId && a.course_id !== initialCourseId) return false;
+    
+    // Priority 2: Standard tab filter
     if (filter === 'Tất cả') return true;
     return a.status === filter;
   });
@@ -214,13 +151,7 @@ export function AssignmentsPage() {
     return name.substring(0, 2).toUpperCase();
   };
 
-  // Helper: score color
-  const getScoreColor = (score: number, maxScore: number) => {
-    const pct = (score / maxScore) * 100;
-    if (pct >= 80) return { bg: 'bg-emerald-50', text: 'text-emerald-600', border: 'border-emerald-200', ring: 'ring-emerald-100' };
-    if (pct >= 60) return { bg: 'bg-amber-50', text: 'text-amber-600', border: 'border-amber-200', ring: 'ring-amber-100' };
-    return { bg: 'bg-red-50', text: 'text-red-600', border: 'border-red-200', ring: 'ring-red-100' };
-  };
+
 
   return (
     <div className="space-y-8">
@@ -234,7 +165,7 @@ export function AssignmentsPage() {
           </p>
         </div>
         {(role === 'teacher' || role === 'admin') && (
-          <button onClick={() => { setShowCreateModal(true); setFormData({ course_id: courses[0]?.id?.toString() || '', title: '', description: '', icon: 'assignment', due_date: '', max_score: '10' }); }} className="bg-[#13375f] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition-all active:scale-95">
+          <button onClick={() => navigate('/dashboard/create-lecture?type=assignment')} className="bg-[#13375f] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition-all active:scale-95">
             <span className="material-symbols-outlined text-sm">add</span>
             Tạo bài tập mới
           </button>
@@ -332,151 +263,20 @@ export function AssignmentsPage() {
 
       {/* Submission Modal (Student) */}
       {selectedAssignment && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" style={{animation: 'fadeIn 0.2s ease'}}>
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden" style={{animation: 'zoomIn 0.3s ease'}}>
-                <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-[#f4f3f7]">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-[#13375f] rounded-lg text-white flex items-center justify-center"><span className="material-symbols-outlined">{selectedAssignment.icon || 'assignment'}</span></div>
-                        <div>
-                            <h3 className="font-bold text-[#002143] text-lg">{selectedAssignment.title}</h3>
-                            <p className="text-xs text-[#43474e]">Khóa: {selectedAssignment.course}</p>
-                        </div>
-                    </div>
-                    <button onClick={() => setSelectedAssignment(null)} className="text-slate-400 hover:text-red-500 transition-colors p-2"><span className="material-symbols-outlined">close</span></button>
-                </div>
-                <div className="p-6 space-y-4">
-                    <p className="text-sm text-[#43474e] bg-amber-50 p-3 rounded-xl border border-amber-100">
-                        <span className="font-bold text-amber-700">Hạn nộp:</span> {selectedAssignment.due}
-                    </p>
-                    <div>
-                        <label className="block text-sm font-bold text-[#002143] mb-2">Nội dung bài làm</label>
-                        <textarea 
-                            value={submitText}
-                            onChange={e => setSubmitText(e.target.value)}
-                            placeholder="Nhập nội dung bài luận hoặc đáp án vào đây..."
-                            className="w-full h-28 p-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-[#13375f]/20 resize-none text-[#002143]"
-                        ></textarea>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-[#002143] mb-2">Hoặc tải file bài làm lên</label>
-                        <FileUpload
-                          onFileUploaded={(data) => setUploadedFile(data)}
-                          uploadEndpoint="/upload/submission"
-                          accept=".pdf,.doc,.docx,.zip,.jpg,.png,.mp3"
-                          maxSizeMB={20}
-                          label="Kéo thả file bài làm vào đây"
-                        />
-                    </div>
-                </div>
-                <div className="p-6 pt-0 flex gap-3">
-                    <button onClick={() => {setSelectedAssignment(null); setUploadedFile(null);}} className="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-colors">Hủy</button>
-                    <button onClick={handleSubmitAssignment} disabled={(!submitText.trim() && !uploadedFile) || submitting} className="flex-1 py-3 bg-[#13375f] text-white font-bold rounded-xl hover:bg-[#0f2a47] disabled:opacity-50 transition-all flex justify-center items-center gap-2">
-                        {submitting ? <><span className="animate-spin">⏳</span> Đang nộp...</> : <><span className="material-symbols-outlined text-sm">send</span> Nộp bài</>}
-                    </button>
-                </div>
-            </div>
-        </div>
+        <StudentSubmitBox 
+            assignment={selectedAssignment}
+            onClose={() => setSelectedAssignment(null)}
+            onSuccess={fetchAssignments}
+        />
       )}
 
       {/* ================================================ */}
       {/* Student Feedback Modal */}
       {/* ================================================ */}
-      {feedbackData && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" style={{animation: 'fadeIn 0.2s ease'}}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden" style={{animation: 'zoomIn 0.3s ease'}}>
-            {/* Header */}
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-[#002143] to-[#13375f]">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center text-white">
-                  <span className="material-symbols-outlined">{feedbackData.assignment?.icon || 'assignment'}</span>
-                </div>
-                <div>
-                  <h3 className="font-bold text-white text-lg">{feedbackData.assignment?.title}</h3>
-                  <p className="text-xs text-[#82a1cf]">Khóa: {feedbackData.assignment?.course}</p>
-                </div>
-              </div>
-              <button onClick={() => setFeedbackData(null)} className="text-white/60 hover:text-white transition-colors p-2"><span className="material-symbols-outlined">close</span></button>
-            </div>
-
-            <div className="p-6 space-y-5">
-              {feedbackData.submission?.status === 'graded' ? (
-                <>
-                  {/* Score Display */}
-                  {(() => {
-                    const sc = getScoreColor(parseFloat(feedbackData.submission.score), feedbackData.submission.max_score);
-                    return (
-                      <div className={`${sc.bg} ${sc.border} border rounded-2xl p-6 text-center ring-4 ${sc.ring}`}>
-                        <p className="text-sm font-bold text-[#43474e] uppercase tracking-wider mb-2">Điểm số của bạn</p>
-                        <div className={`text-5xl font-headline font-extrabold ${sc.text} mb-1`}>
-                          {feedbackData.submission.score}<span className="text-2xl text-[#43474e] font-normal">/{feedbackData.submission.max_score}</span>
-                        </div>
-                        <div className="mt-3 flex items-center justify-center gap-2">
-                          {parseFloat(feedbackData.submission.score) / feedbackData.submission.max_score >= 0.8 ? (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">
-                              <span className="material-symbols-outlined text-sm" style={{fontVariationSettings: "'FILL' 1"}}>emoji_events</span> Xuất sắc!
-                            </span>
-                          ) : parseFloat(feedbackData.submission.score) / feedbackData.submission.max_score >= 0.6 ? (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">
-                              <span className="material-symbols-outlined text-sm">thumb_up</span> Khá tốt
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold">
-                              <span className="material-symbols-outlined text-sm">trending_up</span> Cần cải thiện
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Teacher Feedback */}
-                  {feedbackData.submission.feedback && (
-                    <div className="bg-[#f4f3f7] rounded-2xl p-5">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="material-symbols-outlined text-[#13375f] text-lg">chat</span>
-                        <p className="text-sm font-bold text-[#002143]">Nhận xét từ giáo viên</p>
-                      </div>
-                      <div className="bg-white rounded-xl p-4 text-sm text-[#002143] leading-relaxed border border-slate-100 shadow-sm">
-                        <span className="text-3xl text-[#13375f]/20 font-serif leading-none">"</span>
-                        <p className="mt-[-8px] ml-4">{feedbackData.submission.feedback}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Meta info */}
-                  <div className="flex items-center justify-between text-xs text-[#43474e] bg-slate-50 p-3 rounded-xl">
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm">schedule</span>
-                      Nộp lúc: {feedbackData.submission.submitted_at}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-sm">grading</span>
-                      Chấm lúc: {feedbackData.submission.graded_at}
-                    </span>
-                  </div>
-                </>
-              ) : (
-                // Not graded yet
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto bg-amber-50 rounded-full flex items-center justify-center mb-4">
-                    <span className="material-symbols-outlined text-3xl text-amber-500">hourglass_top</span>
-                  </div>
-                  <h4 className="font-bold text-[#002143] text-lg mb-2">Chờ giáo viên chấm bài</h4>
-                  <p className="text-sm text-[#43474e]">Bài làm của bạn đã được nộp thành công. Giáo viên sẽ chấm điểm sớm nhất có thể.</p>
-                  <p className="text-xs text-[#43474e] mt-3 flex items-center justify-center gap-1">
-                    <span className="material-symbols-outlined text-sm">schedule</span>
-                    Nộp lúc: {feedbackData.submission?.submitted_at}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="p-6 pt-0">
-              <button onClick={() => setFeedbackData(null)} className="w-full py-3 bg-[#13375f] text-white font-bold rounded-xl hover:bg-[#0f2a47] transition-all active:scale-[0.98]">Đóng</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <StudentFeedbackViewer 
+        feedbackData={feedbackData}
+        onClose={() => setFeedbackData(null)}
+      />
 
       {/* ================================================ */}
       {/* Teacher/Admin: Assignment Table */}
@@ -546,190 +346,11 @@ export function AssignmentsPage() {
       {/* ================================================ */}
       {/* Teacher Grading Fullscreen Modal */}
       {/* ================================================ */}
-      {gradingAssignment && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm" style={{animation: 'fadeIn 0.2s ease'}}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" style={{animation: 'zoomIn 0.3s ease'}}>
-            {/* Modal Header */}
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-[#002143] to-[#13375f] flex-shrink-0">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-lg text-white flex items-center justify-center">
-                  <span className="material-symbols-outlined">grading</span>
-                </div>
-                <div>
-                  <h3 className="font-bold text-white text-lg">Chấm điểm: {gradingAssignment.title}</h3>
-                  <p className="text-xs text-[#82a1cf]">Khóa: {gradingAssignment.course} • Hạn: {gradingAssignment.dueDate}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex gap-3 text-xs">
-                  <span className="px-3 py-1.5 bg-white/20 backdrop-blur-md text-white rounded-full font-bold">{submissionStats.total || 0} bài nộp</span>
-                  <span className="px-3 py-1.5 bg-emerald-500/30 text-emerald-100 rounded-full font-bold">{submissionStats.graded || 0} đã chấm</span>
-                  {(submissionStats.pending || 0) > 0 && (
-                    <span className="px-3 py-1.5 bg-amber-500/30 text-amber-100 rounded-full font-bold">{submissionStats.pending} chờ chấm</span>
-                  )}
-                </div>
-                <button 
-                  onClick={() => {setGradingAssignment(null); setSubmissions([]); setActiveSubmission(null); setGradeScore(''); setGradeFeedback('');}} 
-                  className="text-white/60 hover:text-white transition-colors p-2"
-                >
-                  <span className="material-symbols-outlined">close</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6">
-              {loadingSubmissions ? (
-                <div className="text-center py-12 text-slate-500 animate-pulse">Đang tải danh sách bài nộp...</div>
-              ) : submissions.length === 0 ? (
-                <div className="text-center py-12 bg-[#f4f3f7] rounded-3xl border border-dashed border-slate-300">
-                  <span className="material-symbols-outlined text-4xl text-slate-400 mb-2">inbox</span>
-                  <p className="font-bold text-[#002143]">Chưa có học sinh nào nộp bài</p>
-                  <p className="text-sm text-slate-500">Hãy chờ học sinh hoàn thành và nộp bài tập.</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {submissions.map((s) => (
-                    <div key={s.id} className={`bg-white border rounded-2xl overflow-hidden transition-all ${activeSubmission?.id === s.id ? 'border-[#13375f] shadow-lg ring-2 ring-[#13375f]/10' : 'border-slate-200 hover:border-slate-300 shadow-sm'}`}>
-                      {/* Submission Row */}
-                      <div className="p-5 flex items-center gap-4">
-                        {/* Avatar */}
-                        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#13375f] to-[#002143] text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
-                          {s.student.avatar_url ? (
-                            <img src={s.student.avatar_url} alt={s.student.name} className="w-full h-full rounded-full object-cover" />
-                          ) : (
-                            getInitials(s.student.name)
-                          )}
-                        </div>
-
-                        {/* Student Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-[#002143] text-sm">{s.student.name}</p>
-                          <p className="text-[10px] text-[#51667c] truncate">{s.student.email}</p>
-                        </div>
-
-                        {/* Submitted Time */}
-                        <div className="text-right flex-shrink-0">
-                          <p className="text-[10px] text-[#43474e] font-medium flex items-center gap-1">
-                            <span className="material-symbols-outlined text-xs">schedule</span>
-                            {s.submitted_at}
-                          </p>
-                        </div>
-
-                        {/* File Download */}
-                        {s.file_url && (
-                          <a href={s.file_url} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-bold hover:bg-blue-100 transition-colors">
-                            <span className="material-symbols-outlined text-sm">download</span>
-                            Tải file
-                          </a>
-                        )}
-
-                        {/* Status Badge */}
-                        {s.status === 'graded' ? (
-                          <div className="flex-shrink-0 flex items-center gap-2">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
-                              <span className="material-symbols-outlined text-xs mr-1">check</span>
-                              {s.score}/{s.max_score}
-                            </span>
-                          </div>
-                        ) : (
-                          <button 
-                            onClick={() => {
-                              setActiveSubmission(activeSubmission?.id === s.id ? null : s);
-                              setGradeScore('');
-                              setGradeFeedback('');
-                            }}
-                            className="flex-shrink-0 inline-flex items-center gap-1.5 px-4 py-2 bg-[#73000a] text-white rounded-xl text-[10px] font-bold hover:bg-[#4b0004] active:scale-95 transition-all shadow-md shadow-[#73000a]/20"
-                          >
-                            <span className="material-symbols-outlined text-sm">edit_note</span>
-                            Chấm điểm
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Submitted Content Preview */}
-                      {s.content && (
-                        <div className="px-5 pb-3">
-                          <div className="bg-slate-50 rounded-xl p-3 text-xs text-[#002143] border border-slate-100">
-                            <span className="text-[10px] font-bold text-[#51667c] uppercase tracking-wider block mb-1">Nội dung bài làm:</span>
-                            <p className="leading-relaxed whitespace-pre-wrap">{s.content}</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Grading Form (expanded) */}
-                      {activeSubmission?.id === s.id && s.status !== 'graded' && (
-                        <div className="px-5 pb-5 border-t border-slate-100 pt-4" style={{animation: 'slideDown 0.3s ease'}}>
-                          <div className="bg-[#f4f3f7] rounded-2xl p-5 space-y-4">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="material-symbols-outlined text-[#73000a] text-lg">edit_note</span>
-                              <p className="font-bold text-[#002143] text-sm">Chấm bài cho: {s.student.name}</p>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-xs font-bold text-[#002143] mb-1.5">Điểm số (0 - {gradingAssignment.max_score || 10})</label>
-                                <input 
-                                  type="number"
-                                  min="0"
-                                  max={gradingAssignment.max_score || 10}
-                                  step="0.5"
-                                  value={gradeScore}
-                                  onChange={e => setGradeScore(e.target.value)}
-                                  placeholder={`Nhập điểm (tối đa ${gradingAssignment.max_score || 10})...`}
-                                  className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#73000a]/20 font-bold text-[#002143]"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-bold text-[#002143] mb-1.5">Nhận xét & Feedback</label>
-                                <textarea 
-                                  value={gradeFeedback}
-                                  onChange={e => setGradeFeedback(e.target.value)}
-                                  placeholder="Nhập nhận xét cho bài làm..."
-                                  className="w-full h-[42px] p-3 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#73000a]/20 resize-none text-[#002143]"
-                                ></textarea>
-                              </div>
-                            </div>
-                            <div className="flex justify-end gap-3 pt-1">
-                              <button 
-                                onClick={() => {setActiveSubmission(null); setGradeScore(''); setGradeFeedback('');}}
-                                className="px-5 py-2.5 bg-white text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-100 transition-colors"
-                              >
-                                Hủy
-                              </button>
-                              <button 
-                                onClick={handleGradeSubmission}
-                                disabled={!gradeScore || gradingInProgress}
-                                className="px-6 py-2.5 bg-[#73000a] text-white font-bold rounded-xl text-xs hover:bg-[#4b0004] disabled:opacity-50 transition-all active:scale-95 flex items-center gap-2 shadow-md shadow-[#73000a]/20"
-                              >
-                                {gradingInProgress ? (
-                                  <><span className="animate-spin">⏳</span> Đang lưu...</>
-                                ) : (
-                                  <><span className="material-symbols-outlined text-sm">check_circle</span> Lưu kết quả</>
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Show feedback if already graded */}
-                      {s.status === 'graded' && s.feedback && (
-                        <div className="px-5 pb-3">
-                          <div className="bg-emerald-50 rounded-xl p-3 text-xs border border-emerald-100">
-                            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block mb-1">Nhận xét đã gửi:</span>
-                            <p className="text-[#002143] leading-relaxed">{s.feedback}</p>
-                            {s.graded_at && <p className="text-[10px] text-emerald-600 mt-2">Chấm lúc: {s.graded_at}</p>}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <TeacherMarkingBoard 
+        gradingAssignment={gradingAssignment}
+        onClose={() => setGradingAssignment(null)}
+        onGraded={fetchAssignments}
+      />
 
       {/* Keyframe Animations */}
       <style>{`
@@ -762,7 +383,7 @@ export function AssignmentsPage() {
                   <select value={formData.course_id} onChange={e => setFormData({...formData, course_id: e.target.value})}
                     className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#13375f]/20 text-[#002143]">
                     <option value="">Chọn khóa học...</option>
-                    {courses.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {courses.map((c: any) => <option key={c.id} value={c.id}>{c.title}</option>)}
                   </select>
                 </div>
               )}

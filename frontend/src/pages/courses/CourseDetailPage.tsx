@@ -4,10 +4,14 @@ import {
   Bell, Settings, BookOpen, PlayCircle, Headphones, FileSignature, Lock,
   CheckCircle2, FileText, HelpCircle, Moon, ArrowRight, Plus, Search,
   Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Maximize, Monitor, Lightbulb,
-  FolderArchive, Download, Table2, GraduationCap, Upload, MessageSquare, User, Clock, Send, X
+  FolderArchive, Download, Table2, GraduationCap, Upload, MessageSquare, User, Clock, Send, X, Trash2
 } from 'lucide-react';
 import { api } from '../../lib/api';
 import { useAuth } from '../../components/AuthContext';
+import { DiscussionForum } from './components/DiscussionForum';
+import { LessonSidebar } from './components/LessonSidebar';
+import { HomeworkUploader } from './components/HomeworkUploader';
+import { VideoPlayerBlock } from './components/VideoPlayerBlock';
 
 type LessonType = 'video' | 'document' | 'quiz' | 'assignment';
 
@@ -27,6 +31,7 @@ interface LessonModule {
   sort_order: number;
   completed?: boolean;
   assignment_id?: number;  // linked assignment FK — direct submit, no title matching
+  is_free_preview?: boolean;
 }
 
 export function CourseDetailPage() {
@@ -39,37 +44,42 @@ export function CourseDetailPage() {
   const [modules, setModules] = useState<LessonModule[]>([]);
   const [selectedModule, setSelectedModule] = useState<LessonModule | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userEnrolled, setUserEnrolled] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'content' | 'resources' | 'discussion'>('content');
 
-  // Video state
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
+  // Video state removed to VideoPlayerBlock.tsx
 
   // Quiz state
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [quizResult, setQuizResult] = useState<number | null>(null);
 
-  // Homework/Assignment state
-  const [homeworkContent, setHomeworkContent] = useState('');
-  const [homeworkFile, setHomeworkFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  // Homework/Assignment state and logic removed to HomeworkUploader.tsx
 
   // Notes
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState<{id: number; time: string; text: string}[]>([]);
   const [newNote, setNewNote] = useState('');
 
-  // Discussion
-  const [forumPosts, setForumPosts] = useState<any[]>([]);
-  const [newPost, setNewPost] = useState('');
+  const handleDeleteLesson = async () => {
+    if (!selectedModule) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa bài giảng: "${selectedModule.title}"?\nThao tác này rất nguy hiểm và không thể hoàn tác.`)) {
+      return;
+    }
 
-  // Search & filter
-  const [lessonSearch, setLessonSearch] = useState('');
-  const [lessonTypeFilter, setLessonTypeFilter] = useState<string>('all');
+    try {
+      await api.delete(`/lessons/${selectedModule.id}`);
+      setModules(prev => prev.filter(m => m.id !== selectedModule.id));
+      setSelectedModule(null);
+      alert('Đã xóa bài giảng thành công.');
+    } catch (e: any) {
+      alert(e?.message || 'Có lỗi khi xóa bài giảng');
+    }
+  };
+
+  // Discussion State removed to DiscussionForum.tsx
+
+  // Local state for sidebar removed to LessonSidebar.tsx
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -81,6 +91,7 @@ export function CourseDetailPage() {
           category: res.category || 'Tất cả',
           level: res.level || 'Mọi cấp độ'
         });
+        setUserEnrolled(!!res.user_enrolled);
 
         const loadedModules: LessonModule[] = (res.lessons || []).map((lesson: any) => ({
           id: lesson.id,
@@ -98,6 +109,7 @@ export function CourseDetailPage() {
           sort_order: lesson.sort_order,
           completed: false,
           assignment_id: lesson.assignment?.id ?? undefined,
+          is_free_preview: !!lesson.is_free_preview,
         }));
 
         if (loadedModules.length === 0) {
@@ -130,28 +142,22 @@ export function CourseDetailPage() {
     if (id) fetchCourse();
   }, [id]);
 
-  // Mark lesson as complete (persisted to API)
+  // Toggle lesson completion (persisted to API)
   const markModuleComplete = async (moduleId: number) => {
-    setModules(prev => prev.map(m => m.id === moduleId ? { ...m, completed: true } : m));
-    try { await api.post(`/lessons/${moduleId}/complete`, {}); } catch (e) { console.warn('[BeeLearn] Progress save failed:', e); }
+    const target = modules.find(m => m.id === moduleId);
+    if (!target) return;
+    const newCompleted = !target.completed;
+    setModules(prev => prev.map(m => m.id === moduleId ? { ...m, completed: newCompleted } : m));
+    try {
+      if (newCompleted) {
+        await api.post(`/lessons/${moduleId}/complete`, {});
+      } else {
+        await api.delete(`/lessons/${moduleId}/complete`);
+      }
+    } catch (e) { console.warn('[BeeLearn] Progress save failed:', e); }
   };
 
-  // Video controls
-  const togglePlay = () => {
-    if (!videoRef.current) return;
-    if (isPlaying) videoRef.current.pause();
-    else videoRef.current.play();
-    setIsPlaying(!isPlaying);
-  };
-  const toggleMute = () => {
-    if (!videoRef.current) return;
-    videoRef.current.muted = !isMuted;
-    setIsMuted(!isMuted);
-  };
-  const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const t = parseFloat(e.target.value);
-    if (videoRef.current) { videoRef.current.currentTime = t; setCurrentTime(t); }
-  };
+
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
     const s = Math.floor(sec % 60);
@@ -173,38 +179,7 @@ export function CourseDetailPage() {
     markModuleComplete(selectedModule.id); // FIX: persist quiz completion
   };
 
-  // Homework/Assignment submit via real API
-  const handleHomeworkSubmit = async () => {
-    if (!selectedModule || (!homeworkContent.trim() && !homeworkFile)) return;
-    if (!selectedModule.assignment_id) {
-      alert('Bài học này chưa có bài tập được gán. Vui lòng liên hệ giáo viên.');
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      // Upload file if present — uses shared uploadFile helper, no hardcoded URL
-      let fileUrl: string | null = null;
-      if (homeworkFile) {
-        const uploadData = await api.uploadFile('/upload/submission', homeworkFile);
-        fileUrl = uploadData.file_path || null;
-      }
-
-      await api.post(`/assignments/${selectedModule.assignment_id}/submit`, {
-        content: homeworkContent.trim() || null,
-        file_url: fileUrl,
-      });
-
-      setSubmitSuccess(true);
-      markModuleComplete(selectedModule.id);
-      setTimeout(() => setSubmitSuccess(false), 3000);
-      setHomeworkContent('');
-      setHomeworkFile(null);
-    } catch (err: any) {
-      alert(err?.message || 'Nộp bài thất bại. Vui lòng thử lại.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  // Homework/Assignment submit logic removed to HomeworkUploader.tsx
 
   // Notes — API-backed
   useEffect(() => {
@@ -236,60 +211,19 @@ export function CourseDetailPage() {
     try { await api.delete(`/notes/${nid}`); } catch (e) { console.warn('[BeeLearn] Note delete failed:', e); }
   };
 
-  // Discussion — API-backed
-  useEffect(() => {
-    if (!id || !selectedModule || selectedModule.id === 0) return;
-    const fetchDiscussions = async () => {
-      try {
-        const res = await api.get(`/courses/${id}/discussions?lesson_id=${selectedModule.id}`);
-        const items = res?.data || res || [];
-        setForumPosts(items.map((d: any) => ({
-          id: d.id.toString(),
-          author: d.author,
-          content: d.content,
-          date: d.date,
-          replies: d.replies_count || 0,
-        })));
-      } catch (e) { console.warn('[BeeLearn] Discussions fetch failed:', e); }
-    };
-    fetchDiscussions();
-  }, [id, selectedModule?.id]);
+  // Discussion handlers removed to DiscussionForum.tsx
 
-  const handleAddPost = async () => {
-    if (!newPost.trim() || !id || !selectedModule) return;
-    try {
-      const res = await api.post(`/courses/${id}/discussions`, {
-        lesson_id: selectedModule.id,
-        content: newPost.trim(),
-      });
-      setForumPosts(prev => [{
-        id: res.id.toString(),
-        author: res.author,
-        content: res.content,
-        date: res.date,
-        replies: 0,
-      }, ...prev]);
-      setNewPost('');
-    } catch (e) { console.warn('[BeeLearn] Discussion post failed:', e); }
-  };
 
-  const progressPercentage = modules.length > 0
-    ? Math.round((modules.filter(m => m.completed).length / modules.length) * 100) : 0;
+  const mainModules = modules.filter(m => !m.title?.toLowerCase().includes('tài liệu bổ trợ'));
+  const progressPercentage = mainModules.length > 0
+    ? Math.round((mainModules.filter(m => m.completed).length / mainModules.length) * 100) : 0;
 
   if (isLoading) return <div className="pt-32 text-center text-xl font-bold min-h-screen bg-surface">Đang tải khóa học...</div>;
   if (!course || !selectedModule) return <div className="pt-32 text-center text-xl font-bold min-h-screen bg-surface">Không tìm thấy khóa học</div>;
 
   const hasVideo = selectedModule.lesson_type === 'video' && (selectedModule.video_full_url || selectedModule.video_path || selectedModule.video_url);
 
-  const getModuleIcon = (type: LessonType) => {
-    switch (type) {
-      case 'video': return PlayCircle;
-      case 'document': return FileText;
-      case 'quiz': return CheckCircle2;
-      case 'assignment': return Upload;
-      default: return PlayCircle;
-    }
-  };
+  // getModuleIcon removed to LessonSidebar.tsx
 
   return (
     <div className="bg-surface text-on-surface min-h-[calc(100vh)] font-body w-full">
@@ -315,14 +249,14 @@ export function CourseDetailPage() {
               <span className="text-xl lg:text-2xl font-extrabold text-[#13375F] dark:text-blue-200 tracking-tight font-headline">Bee<span className="text-beered">Learn</span></span>
             </span>
             <nav className="hidden md:flex gap-6">
-              <span className="font-headline font-semibold tracking-tight text-[#13375F] border-b-2 border-[#13375F] pb-1 cursor-pointer">Dashboard</span>
-              <span onClick={() => navigate('/courses')} className="font-headline font-semibold tracking-tight text-slate-500 hover:text-[#13375F] transition-colors cursor-pointer">Khóa học</span>
+              <span className="font-headline font-semibold tracking-tight text-[#13375F] dark:text-white border-b-2 border-[#13375F] dark:border-white pb-1 cursor-pointer">Dashboard</span>
+              <span onClick={() => navigate('/courses')} className="font-headline font-semibold tracking-tight text-slate-500 dark:text-slate-400 hover:text-[#13375F] dark:hover:text-white transition-colors cursor-pointer">Khóa học</span>
             </nav>
           </div>
           <div className="flex items-center gap-4 sm:gap-6">
             <div className="hidden sm:flex flex-col items-end">
-              <span className="text-xs font-bold text-secondary uppercase tracking-widest">Tiến độ</span>
-              <span className="text-[#13375F] font-bold">{progressPercentage}% Hoàn thành</span>
+              <span className="text-xs font-bold text-secondary dark:text-slate-400 uppercase tracking-widest">Tiến độ</span>
+              <span className="text-[#13375F] dark:text-white font-bold">{progressPercentage}% Hoàn thành</span>
             </div>
           </div>
         </div>
@@ -330,100 +264,23 @@ export function CourseDetailPage() {
 
       <div className="flex flex-col lg:flex-row relative">
         {/* SideNavBar */}
-        <aside className="w-full lg:w-80 lg:bottom-0 left-0 lg:top-[60px] bg-slate-50 dark:bg-slate-900 flex flex-col gap-2 px-4 py-6 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 lg:h-[calc(100vh-60px)] lg:fixed overflow-y-auto shrink-0 z-40">
-          <div className="mb-6 px-2">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 bg-primary-container rounded-xl flex items-center justify-center">
-                <BookOpen className="text-white w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="text-lg font-black text-[#13375F] font-headline">Lộ trình học</h2>
-                <p className="text-xs text-slate-500 font-medium italic">{modules.filter(m => m.completed).length}/{modules.length} bài đã xong</p>
-              </div>
-            </div>
-            <div className="w-full bg-surface-container-highest h-1.5 rounded-full mt-4 overflow-hidden">
-              <div className="bg-tertiary h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${progressPercentage}%` }}></div>
-            </div>
-          </div>
-
-          <div className="space-y-1 z-10 flex-grow">
-            <div className="px-2 py-2 text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.15em]">Nội dung khóa học</div>
-            {/* Search input */}
-            <div className="px-2 mb-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                <input
-                  type="text"
-                  value={lessonSearch}
-                  onChange={e => setLessonSearch(e.target.value)}
-                  placeholder="Tìm bài học..."
-                  className="w-full pl-8 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-700 dark:text-slate-300 placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-[#13375F]/30 transition-all"
-                />
-              </div>
-            </div>
-            {/* Type filter */}
-            <div className="flex gap-1 px-2 mb-3">
-              {[{key:'all',label:'Tất cả'},{key:'video',label:'Video'},{key:'quiz',label:'Quiz'},{key:'document',label:'Tài liệu'},{key:'assignment',label:'Bài tập'}].map(f => (
-                <button key={f.key} onClick={() => setLessonTypeFilter(f.key)}
-                  className={`text-[9px] font-bold px-2 py-1 rounded-md transition-all ${lessonTypeFilter === f.key ? 'bg-[#13375F] text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-300'}`}>
-                  {f.label}
-                </button>
-              ))}
-            </div>
-            {modules.filter(m => {
-              const matchSearch = !lessonSearch || m.title.toLowerCase().includes(lessonSearch.toLowerCase());
-              const matchType = lessonTypeFilter === 'all' || m.lesson_type === lessonTypeFilter;
-              return matchSearch && matchType;
-            }).map((m) => {
-              const Icon = getModuleIcon(m.lesson_type);
-              return (
-                <div
-                  key={m.id}
-                  onClick={() => {
-                    setSelectedModule(m);
-                    setQuizResult(null);
-                    setQuizAnswers({});
-                    setIsPlaying(false);
-                    setSubmitSuccess(false);
-                    setHomeworkContent('');
-                    setHomeworkFile(null);
-                  }}
-                  className={`flex items-center gap-3 font-body rounded-xl p-3 cursor-pointer group transition-all ${selectedModule?.id === m.id ? 'bg-white dark:bg-slate-800 text-[#13375F] dark:text-blue-300 shadow-sm border-l-4 border-[#13375F]' : 'text-slate-600 dark:text-slate-400 hover:translate-x-1 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                >
-                  <Icon className={`${selectedModule?.id === m.id ? 'text-[#13375F]' : 'group-hover:text-[#13375F]'} w-5 h-5 shrink-0 transition-colors`} />
-                  <div className="flex-1 min-w-0">
-                    <span className={`text-sm line-clamp-1 ${selectedModule?.id === m.id ? 'font-bold' : ''}`} title={m.title}>{m.title}</span>
-                    <p className="text-[10px] text-slate-400">{m.lesson_type === 'video' ? 'Video' : m.lesson_type === 'document' ? 'Tài liệu' : m.lesson_type === 'quiz' ? 'Quiz' : 'Bài tập'} • {m.duration_minutes}p</p>
-                  </div>
-                  {m.completed ? (
-                    <CheckCircle2 className="text-emerald-600 ml-auto w-4 h-4 shrink-0" />
-                  ) : (
-                    <div className="w-4 h-4 rounded-full border-2 border-slate-200 ml-auto shrink-0" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Teacher/Admin: Add Lecture Button */}
-          {(user?.role === 'teacher' || user?.role === 'admin') && (
-            <div className="px-2 mt-4">
-              <button
-                onClick={() => navigate(`/dashboard/lectures/create?course=${id}`)}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-[#E24843] to-[#e65540] text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg hover:brightness-110 transition-all active:scale-95"
-              >
-                <Plus className="w-4 h-4" />
-                Thêm bài giảng
-              </button>
-            </div>
-          )}
-
-          <div className="mt-8 lg:mt-auto pt-6 border-t border-slate-200 z-10 shrink-0">
-            <button onClick={() => navigate(-1)} className="w-full bg-[#13375F] text-white py-3 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 mb-4">
-              <ArrowRight className="w-4 h-4 rotate-180" /> Quay lại
-            </button>
-          </div>
-        </aside>
+        <LessonSidebar
+          courseId={id as string}
+          modules={modules}
+          selectedModule={selectedModule}
+          progressPercentage={progressPercentage}
+          userEnrolled={userEnrolled}
+          onSelectModule={(m) => {
+            if (!userEnrolled && !m.is_free_preview) {
+              alert('Vui lòng đăng ký khóa học để tham gia bài học này!');
+              return;
+            }
+            setSelectedModule(m);
+            setQuizResult(null);
+            setQuizAnswers({});
+          }}
+          onMarkComplete={markModuleComplete}
+        />
 
         {/* Main Content Area */}
         <main className="lg:ml-80 flex-1 p-4 sm:p-8 overflow-x-hidden min-h-screen relative">
@@ -436,6 +293,14 @@ export function CourseDetailPage() {
                 </p>
               </div>
               <div className="flex gap-2 sm:gap-3 w-full md:w-auto">
+                {(user?.role === 'admin' || user?.role === 'teacher') && selectedModule && (
+                  <button
+                    onClick={handleDeleteLesson}
+                    className="flex-1 md:flex-none flex justify-center items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold transition-colors text-sm bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700 border border-red-100 hover:border-red-200"
+                  >
+                    <Trash2 className="w-5 h-5" /> Xóa bài giảng
+                  </button>
+                )}
                 <button
                   onClick={() => setShowNotes(!showNotes)}
                   className={`flex-1 md:flex-none flex justify-center items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl font-bold transition-colors text-sm ${showNotes ? 'bg-[#13375F] text-white' : 'bg-surface-container-high text-primary hover:bg-surface-container-highest'}`}>
@@ -452,25 +317,12 @@ export function CourseDetailPage() {
               }`}>
 
                 {/* ═══ VIDEO TYPE ═══ */}
-                {selectedModule.lesson_type === 'video' && (
-                  hasVideo ? (
-                    <video
-                      ref={videoRef}
-                      controls
-                      controlsList="nodownload"
-                      src={selectedModule.video_full_url || ''}
-                      className="w-full h-full object-contain rounded-2xl"
-                      onEnded={() => markModuleComplete(selectedModule.id)}
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#13375f] to-[#0a1628]">
-                      <div className="text-center">
-                        <PlayCircle className="w-16 h-16 text-white/20 mx-auto mb-4" />
-                        <p className="text-white/40 text-sm">Video đang được cập nhật</p>
-                      </div>
-                    </div>
-                  )
-                )}
+                <VideoPlayerBlock 
+                  ref={videoRef}
+                  selectedModule={selectedModule}
+                  hasVideo={!!hasVideo}
+                  onEnded={() => markModuleComplete(selectedModule.id)}
+                />
 
                 {/* ═══ DOCUMENT TYPE ═══ */}
                 {selectedModule.lesson_type === 'document' && (
@@ -543,76 +395,10 @@ export function CourseDetailPage() {
                   </div>
                 )}
 
-                {/* ═══ ASSIGNMENT TYPE ═══ */}
-                {selectedModule.lesson_type === 'assignment' && (
-                  <div className="w-full text-center py-6">
-                    <div className="w-20 h-20 bg-amber-50 shadow-inner rounded-3xl flex items-center justify-center mx-auto mb-6 text-amber-600 border border-amber-100">
-                      <FileSignature size={36} />
-                    </div>
-                    <h2 className="text-3xl font-black text-primary mb-4 font-headline">{selectedModule.title}</h2>
-
-                    {(selectedModule.description || selectedModule.content) && (
-                      <div className="bg-amber-50/70 p-6 rounded-2xl border border-amber-100 mb-6 max-w-2xl mx-auto text-left shadow-sm">
-                        <h4 className="font-bold text-amber-800 mb-2 flex items-center gap-2"><Lightbulb size={20}/> Yêu cầu bài tập:</h4>
-                        <p className="text-amber-700/90 leading-relaxed font-medium whitespace-pre-wrap">{selectedModule.content || selectedModule.description}</p>
-                      </div>
-                    )}
-
-                    {selectedModule.materials_full_url && (
-                      <div className="mb-8 max-w-2xl mx-auto">
-                        <a href={selectedModule.materials_full_url} target="_blank" rel="noopener noreferrer"
-                          className="w-full px-6 py-4 bg-amber-100/50 hover:bg-amber-100 text-amber-800 font-bold rounded-xl border border-amber-200 transition-all flex items-center justify-center gap-3">
-                          <Download size={20} /> Tải bài tập đính kèm
-                        </a>
-                      </div>
-                    )}
-
-                    {submitSuccess ? (
-                      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-8 max-w-xl mx-auto">
-                        <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-                        <h3 className="text-xl font-bold text-emerald-700 mb-2">Nộp bài thành công! 🎉</h3>
-                        <p className="text-emerald-600 text-sm">Giáo viên sẽ chấm bài sớm nhất có thể.</p>
-                      </div>
-                    ) : (
-                      <div className="max-w-2xl mx-auto space-y-6 text-left">
-                        <div>
-                          <label className="block text-sm font-bold text-[#002143] mb-2">Nội dung bài làm</label>
-                          <textarea
-                            value={homeworkContent}
-                            onChange={e => setHomeworkContent(e.target.value)}
-                            placeholder="Nhập câu trả lời, bài luận hoặc đáp án..."
-                            rows={6}
-                            className="w-full p-4 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#13375F] outline-none transition-all resize-none text-sm mb-4"
-                          />
-                          <label className="block text-sm font-bold text-[#002143] mb-2">Hoặc tải lên tệp bài làm (nếu có)</label>
-                          <div className="relative">
-                            <input
-                              type="file"
-                              onChange={e => setHomeworkFile(e.target.files?.[0] || null)}
-                              className="hidden"
-                              id="homework-file-upload"
-                            />
-                            <label htmlFor="homework-file-upload" className="w-full p-4 border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center gap-2 cursor-pointer hover:bg-slate-50 hover:border-[#13375F] transition-all text-slate-500 font-medium text-sm">
-                              <Upload size={20} /> 
-                              {homeworkFile ? <span className="text-[#13375F] font-bold">{homeworkFile.name}</span> : 'Chọn tệp...'}
-                            </label>
-                          </div>
-                        </div>
-                        <button
-                          onClick={handleHomeworkSubmit}
-                          disabled={(!homeworkContent.trim() && !homeworkFile) || isSubmitting}
-                          className="w-full py-4 bg-[#13375F] text-white font-bold text-lg rounded-xl shadow-xl hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
-                        >
-                          {isSubmitting ? (
-                            <><span className="animate-spin">⏳</span> Đang nộp...</>
-                          ) : (
-                            <><Send size={20} /> Nộp Bài</>
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <HomeworkUploader 
+                  selectedModule={selectedModule} 
+                  onComplete={markModuleComplete} 
+                />
               </div>
 
               {/* Notes Side Panel */}
@@ -710,27 +496,53 @@ export function CourseDetailPage() {
                   </div>
                 )}
 
-                {activeTab === 'resources' && (
+                {activeTab === 'resources' && (() => {
+                  // Build array mapping every module to its logical chapter based on sort order
+                  let currentChap = 'Chung';
+                  const modulesWithChapter = modules.map(m => {
+                    const isSupplemental = m.title?.toLowerCase().includes('tài liệu bổ trợ');
+                    if (m.title?.includes(' - ') && !isSupplemental) {
+                      currentChap = m.title.split(' - ')[0].trim();
+                    }
+                    return { ...m, inferredChapter: currentChap };
+                  });
+
+                  // Identify the logical chapter of the currently selected module
+                  const activeModuleWithChap = modulesWithChapter.find(m => m.id === selectedModule.id);
+                  const activeChapter = activeModuleWithChap?.inferredChapter || 'Chung';
+                  
+                  // Filter materials to ONLY those matching the active chapter
+                  const chapterMaterials = modulesWithChapter.filter(
+                    m => m.materials_full_url && m.inferredChapter === activeChapter
+                  );
+                  
+                  // For UI display
+                  const currentChapter = activeChapter !== 'Chung' ? activeChapter : null;
+
+                  return (
                   <div className="p-8 bg-surface-container-highest rounded-2xl border border-dashed border-outline/30">
                     <h4 className="font-bold text-primary mb-6 flex items-center gap-2 font-headline text-xl">
-                      <FolderArchive className="w-6 h-6 text-primary" /> Tài liệu khóa học
+                      <FolderArchive className="w-6 h-6 text-primary" /> Tài liệu {currentChapter || 'khóa học'}
                     </h4>
                     <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {modules.filter(m => m.materials_full_url).map(m => (
+                      {chapterMaterials.map(m => {
+                        const displayName = m.title?.includes(' - ') ? m.title.split(' - ').slice(1).join(' - ').trim() : m.title;
+                        return (
                         <li key={m.id} className="flex items-center gap-4 bg-white p-4 rounded-xl group cursor-pointer hover:shadow-md transition-all border border-transparent hover:border-primary/20">
                           <div className="p-3 bg-red-50 text-error rounded-xl group-hover:bg-error group-hover:text-white transition-colors shrink-0">
                             <FileText className="w-6 h-6" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-bold text-primary truncate">{m.title}</p>
+                            <p className="font-bold text-primary truncate">{displayName}</p>
                             <p className="text-xs text-on-surface-variant mt-1">Tài liệu đính kèm</p>
                           </div>
                           <a href={m.materials_full_url!} target="_blank" rel="noopener noreferrer">
                             <Download className="text-slate-400 group-hover:text-primary transition-colors w-5 h-5 shrink-0 mr-2" />
                           </a>
                         </li>
-                      ))}
-                      {modules.filter(m => m.materials_full_url).length === 0 && (
+                        );
+                      })}
+                      {chapterMaterials.length === 0 && (
                         <div className="col-span-2 text-center py-8 text-slate-400">
                           <FolderArchive className="w-12 h-12 mx-auto mb-3 text-slate-200" />
                           <p>Chưa có tài liệu bổ trợ</p>
@@ -738,46 +550,11 @@ export function CourseDetailPage() {
                       )}
                     </ul>
                   </div>
-                )}
+                  );
+                })()}
 
                 {activeTab === 'discussion' && (
-                  <div className="bg-surface-container-lowest p-6 sm:p-8 rounded-2xl shadow-sm border border-black/5">
-                    <h3 className="text-xl sm:text-2xl font-bold text-primary mb-6 font-headline">Hỏi đáp & Thảo luận</h3>
-                    <div className="mb-8 p-6 bg-surface-container-low rounded-2xl border border-outline-variant/30">
-                      <textarea value={newPost} onChange={e => setNewPost(e.target.value)}
-                        placeholder="Bạn có câu hỏi gì cho bài học này?"
-                        className="w-full p-4 bg-white border border-outline/20 rounded-xl focus:ring-2 focus:ring-[#13375F] outline-none transition-all resize-none h-32 text-on-surface text-base" />
-                      <button onClick={handleAddPost}
-                        className="mt-4 float-right bg-[#E24843] text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 hover:brightness-110 shadow-lg transition-all">
-                        <Send size={18} /> Gửi câu hỏi
-                      </button>
-                      <div className="clear-both" />
-                    </div>
-                    <div className="space-y-4">
-                      {forumPosts.length === 0 && (
-                        <div className="text-center py-8 text-slate-400">
-                          <MessageSquare className="w-12 h-12 mx-auto mb-3 text-slate-200" />
-                          <p>Chưa có câu hỏi nào. Hãy là người đầu tiên!</p>
-                        </div>
-                      )}
-                      {forumPosts.map(post => (
-                        <div key={post.id} className="p-6 rounded-2xl border border-outline-variant/20 hover:border-primary/30 transition-all bg-white hover:shadow-md">
-                          <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-full bg-[#13375F]/10 flex items-center justify-center text-[#13375F] border border-[#13375F]/20">
-                              <User size={24} />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-2">
-                                <h4 className="font-bold text-lg text-[#13375F] font-headline">{post.author}</h4>
-                                <span className="text-sm text-slate-400 flex items-center gap-1 font-medium"><Clock size={14} /> {post.date}</span>
-                              </div>
-                              <p className="text-on-surface-variant text-base font-medium leading-relaxed p-4 bg-slate-50 rounded-xl">{post.content}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  <DiscussionForum courseId={id as string} lessonId={selectedModule.id} />
                 )}
               </div>
             </div>

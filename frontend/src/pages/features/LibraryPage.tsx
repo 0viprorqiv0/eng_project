@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, 
-  Download, 
   FileText, 
   Video, 
   Headphones, 
-  BookOpen
+  BookOpen,
+  ExternalLink
 } from 'lucide-react';
 import { BeeDecoration } from '../../components/BeeDecoration';
+
+const DRIVE_LINK = 'https://drive.google.com/drive/folders/1uEQ5UZ7_c5nIlLOIY4-WQbv-nlp_cEmn?usp=sharing';
 
 export function LibraryPage() {
   const [activeCategory, setActiveCategory] = useState('Tất cả');
@@ -17,14 +19,14 @@ export function LibraryPage() {
   const categories = ['Tất cả', 'Tài liệu PDF', 'Video bài giảng', 'Audio luyện nghe', 'Đề thi thử'];
   
   const libraryItems = [
-    { id: 1, title: "Bộ 50 đề thi thử THPT Quốc Gia 2024", type: "Tài liệu PDF", icon: <FileText />, size: "15MB", downloads: 1250 },
-    { id: 2, title: "Tổng hợp ngữ pháp Tiếng Anh cơ bản", type: "Tài liệu PDF", icon: <FileText />, size: "5MB", downloads: 3400 },
-    { id: 3, title: "Video chữa đề minh họa BGD 2024", type: "Video bài giảng", icon: <Video />, size: "250MB", downloads: 890 },
-    { id: 4, title: "100 bài nghe IELTS Listening Part 1", type: "Audio luyện nghe", icon: <Headphones />, size: "120MB", downloads: 2100 },
-    { id: 5, title: "Từ vựng chuyên ngành Kinh tế", type: "Tài liệu PDF", icon: <FileText />, size: "3MB", downloads: 560 },
-    { id: 6, title: "Đề thi thử IELTS Reading Academic", type: "Đề thi thử", icon: <BookOpen />, size: "8MB", downloads: 1500 },
-    { id: 7, title: "Video hướng dẫn phát âm chuẩn Anh-Mỹ", type: "Video bài giảng", icon: <Video />, size: "180MB", downloads: 3200 },
-    { id: 8, title: "Audio luyện nghe TOEIC Part 3, 4", type: "Audio luyện nghe", icon: <Headphones />, size: "90MB", downloads: 1800 },
+    { id: 1, title: "Bộ 50 đề thi thử THPT Quốc Gia 2024", type: "Tài liệu PDF", icon: <FileText /> },
+    { id: 2, title: "Tổng hợp ngữ pháp Tiếng Anh cơ bản", type: "Tài liệu PDF", icon: <FileText /> },
+    { id: 3, title: "Video chữa đề minh họa BGD 2024", type: "Video bài giảng", icon: <Video /> },
+    { id: 4, title: "100 bài nghe IELTS Listening Part 1", type: "Audio luyện nghe", icon: <Headphones /> },
+    { id: 5, title: "Từ vựng chuyên ngành Kinh tế", type: "Tài liệu PDF", icon: <FileText /> },
+    { id: 6, title: "Đề thi thử IELTS Reading Academic", type: "Đề thi thử", icon: <BookOpen /> },
+    { id: 7, title: "Video hướng dẫn phát âm chuẩn Anh-Mỹ", type: "Video bài giảng", icon: <Video /> },
+    { id: 8, title: "Audio luyện nghe TOEIC Part 3, 4", type: "Audio luyện nghe", icon: <Headphones /> },
   ];
 
   const filteredItems = libraryItems.filter(item => {
@@ -54,15 +56,18 @@ export function LibraryPage() {
             </p>
             
             {/* Search Bar */}
-            <div className="max-w-2xl mx-auto relative">
-              <input 
-                type="text" 
-                placeholder="Tìm kiếm tài liệu..." 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full py-4 pl-12 pr-4 rounded-full text-navy font-medium focus:outline-none focus:ring-2 focus:ring-beered shadow-xl"
-              />
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={24} />
+            <div className="max-w-2xl mx-auto relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-beered via-orange-400 to-beered rounded-full opacity-60 group-hover:opacity-100 blur-md transition-opacity duration-500 animate-pulse" />
+              <div className="relative flex items-center">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-beered z-10" size={24} />
+                <input 
+                  type="text" 
+                  placeholder="Tìm kiếm tài liệu, đề thi, video..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full py-5 pl-14 pr-6 rounded-full text-navy text-lg font-semibold focus:outline-none focus:ring-4 focus:ring-beered/40 shadow-2xl bg-white border-2 border-white/80 placeholder:text-gray-400 relative z-[1]"
+                />
+              </div>
             </div>
           </motion.div>
         </div>
@@ -94,30 +99,31 @@ export function LibraryPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <AnimatePresence mode="popLayout">
               {filteredItems.map(item => (
-                <motion.div
+                <motion.a
                   key={item.id}
+                  href={DRIVE_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   layout
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.3 }}
-                  className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all group flex flex-col"
+                  className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all group flex flex-col cursor-pointer"
                 >
                   <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center text-beered mb-4 group-hover:bg-beered group-hover:text-white transition-colors">
                     {item.icon}
                   </div>
                   <h3 className="font-bold text-navy mb-2 line-clamp-2 flex-grow">{item.title}</h3>
-                  <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                  <div className="flex items-center text-xs text-gray-500 mb-4">
                     <span className="bg-gray-100 px-2 py-1 rounded-md">{item.type}</span>
-                    <span>{item.size}</span>
                   </div>
-                  <div className="flex items-center justify-between border-t border-gray-50 pt-4 mt-auto">
-                    <span className="text-xs text-gray-400">{item.downloads} lượt tải</span>
-                    <button className="text-navy hover:text-beered transition-colors flex items-center gap-1 font-bold text-sm">
-                      Tải xuống <Download size={16} />
-                    </button>
+                  <div className="flex items-center justify-end border-t border-gray-50 pt-4 mt-auto">
+                    <span className="text-navy hover:text-beered transition-colors flex items-center gap-1 font-bold text-sm group-hover:gap-2">
+                      Xem tài liệu <ExternalLink size={16} />
+                    </span>
                   </div>
-                </motion.div>
+                </motion.a>
               ))}
             </AnimatePresence>
             {filteredItems.length === 0 && (

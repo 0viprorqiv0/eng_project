@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import {
   CheckCircle2, HelpCircle, ArrowLeft, Clock, Trophy,
-  RotateCcw, ChevronRight, Loader2, PenLine
+  RotateCcw, ChevronRight, Loader2, PenLine, LogIn
 } from 'lucide-react';
+import { useAuth } from '../../components/AuthContext';
 
 interface QuizOption {
   id: string;
@@ -24,7 +25,8 @@ interface QuizQuestion {
 export function QuizPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-
+  const { user } = useAuth();
+  
   const [lesson, setLesson] = useState<any>(null);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,7 +45,13 @@ export function QuizPage() {
         const res = await api.get(`/lessons/${id}`);
         if (res?.lesson) {
           setLesson(res.lesson);
-          setQuestions(res.lesson.questions_data || []);
+          let allQuestions = res.lesson.questions_data || [];
+          if (allQuestions.length > 10) {
+            // Randomize and pick 10 questions for better practice
+            allQuestions.sort(() => 0.5 - Math.random());
+            allQuestions = allQuestions.slice(0, 10);
+          }
+          setQuestions(allQuestions);
         }
       } catch (err) {
         console.error('Failed to load quiz:', err);
@@ -70,6 +78,11 @@ export function QuizPage() {
   }, [currentPage, timeLeft]);
 
   const startQuiz = () => {
+    if (!user) {
+      alert('Vui lòng đăng nhập để làm bài và lưu kết quả!');
+      navigate('/login');
+      return;
+    }
     setCurrentPage('quiz');
     setTimeLeft(lesson?.duration_minutes ? lesson.duration_minutes * 60 : null);
     setAnswers({});
@@ -88,7 +101,8 @@ export function QuizPage() {
       const res = await api.post(`/lessons/${id}/quiz`, {
         answers,
         essay_answers: essayAnswers,
-        time_spent: timeSpent
+        time_spent: timeSpent,
+        question_ids: questions.map(q => q.id)
       });
 
       setResult({
@@ -110,6 +124,12 @@ export function QuizPage() {
     setEssayAnswers({});
     setResult(null);
     setTimeLeft(null);
+    // Re-shuffle questions for a fresh set of 10
+    if (lesson?.questions_data) {
+      let allQ = [...lesson.questions_data];
+      allQ.sort(() => 0.5 - Math.random());
+      setQuestions(allQ.length > 10 ? allQ.slice(0, 10) : allQ);
+    }
   };
 
   const formatTimer = (secs: number) => {
@@ -186,23 +206,39 @@ export function QuizPage() {
                 <p className="text-[10px] text-[#43474e] font-bold uppercase tracking-wider">Câu hỏi</p>
               </div>
               <div className="bg-[#f4f3f7] rounded-2xl p-4">
-                <p className="text-2xl font-black text-[#002143]">{mcQuestions.length}</p>
-                <p className="text-[10px] text-[#43474e] font-bold uppercase tracking-wider">Trắc nghiệm</p>
+                <p className="text-2xl font-black text-[#002143]">{lesson.questions_data?.length || questions.length}</p>
+                <p className="text-[10px] text-[#43474e] font-bold uppercase tracking-wider">Ngân hàng đề</p>
               </div>
               <div className="bg-[#f4f3f7] rounded-2xl p-4">
-                <p className="text-2xl font-black text-[#002143]">{essayQuestions.length}</p>
-                <p className="text-[10px] text-[#43474e] font-bold uppercase tracking-wider">Tự luận</p>
+                <p className="text-2xl font-black text-[#002143]">{lesson.duration_minutes || 10}</p>
+                <p className="text-[10px] text-[#43474e] font-bold uppercase tracking-wider">Phút</p>
               </div>
             </div>
+            {(lesson.questions_data?.length || 0) > questions.length && (
+              <p className="text-xs text-[#43474e] mb-4 bg-blue-50 inline-block px-4 py-2 rounded-full">
+                🎲 Mỗi lần làm bài sẽ chọn ngẫu nhiên <strong>{questions.length}</strong> câu từ ngân hàng <strong>{lesson.questions_data?.length}</strong> câu
+              </p>
+            )}
             {lesson.duration_minutes > 0 && (
               <p className="text-sm text-[#43474e] mb-6 flex items-center justify-center gap-2">
                 <Clock className="w-4 h-4" /> Thời gian làm bài: <strong>{lesson.duration_minutes} phút</strong>
               </p>
             )}
-            <button onClick={startQuiz}
-              className="px-12 py-4 bg-gradient-to-r from-[#002143] to-[#13375f] text-white font-bold text-lg rounded-2xl shadow-xl hover:shadow-2xl transition-all active:scale-95">
-              🚀 Bắt đầu làm bài
-            </button>
+            {user ? (
+              <button 
+                onClick={startQuiz}
+                className="px-12 py-4 bg-gradient-to-r from-[#002143] to-[#13375f] text-white font-bold text-lg rounded-2xl shadow-xl hover:shadow-2xl transition-all active:scale-95"
+              >
+                🚀 Bắt đầu làm bài
+              </button>
+            ) : (
+              <button 
+                onClick={startQuiz}
+                className="px-12 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold text-lg rounded-2xl shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-3 mx-auto"
+              >
+                <LogIn className="w-6 h-6" /> Đăng nhập để làm bài
+              </button>
+            )}
           </div>
         )}
 

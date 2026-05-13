@@ -10,7 +10,7 @@ class Assignment extends Model
 {
     protected $fillable = [
         'course_id', 'lesson_id', 'teacher_id', 'title', 'description',
-        'icon', 'due_date', 'max_score', 'status',
+        'icon', 'due_date', 'max_score', 'status', 'file_url', 'file_name',
     ];
 
     protected function casts(): array

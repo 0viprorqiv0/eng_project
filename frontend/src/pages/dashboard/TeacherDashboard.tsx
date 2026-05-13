@@ -48,7 +48,7 @@ export function TeacherDashboard() {
         <div className="relative z-10 max-w-2xl">
           <h2 className="font-headline text-3xl font-bold mb-3 tracking-tight">Chào buổi sáng, {name}!</h2>
           <p className="text-[#82a1cf] text-lg leading-relaxed opacity-90">
-            Hôm nay bạn có <span className="text-white font-bold underline decoration-[#ffdad6] underline-offset-4">2 lớp học mới</span> và 15 bài tập cần chấm điểm. Chúc {pronoun} một ngày làm việc hiệu quả!
+            Hôm nay bạn có <span className="text-white font-bold underline decoration-[#ffdad6] underline-offset-4">{stats.new_enrollments_today || 0} học viên mới</span> và {stats.pending_submissions_count || 0} bài tập cần chấm điểm. Chúc {pronoun} một ngày làm việc hiệu quả!
           </p>
         </div>
         <div className="absolute top-[-20%] right-[-5%] w-64 h-64 bg-[#73000a]/20 rounded-full blur-3xl"></div>
@@ -96,20 +96,24 @@ export function TeacherDashboard() {
       {/* Quick Actions */}
       <section className="space-y-4">
         <h4 className="font-headline text-xl font-bold text-[#002143]">Thao tác nhanh</h4>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
-            { id: 'upload', icon: 'upload_file', label: 'Upload bài giảng' },
-            { id: 'create-course', icon: 'add_circle', label: 'Tạo khóa học mới' },
-            { id: 'manage', icon: 'inventory_2', label: 'Quản lý khóa học' },
-            { id: 'notify', icon: 'campaign', label: 'Gửi thông báo' },
+            { id: 'upload', icon: 'upload_file', label: 'Upload bài giảng', color: 'bg-blue-50 text-blue-600', hover: 'hover:border-blue-200' },
+            { id: 'manage', icon: 'inventory_2', label: 'Quản lý khóa học', color: 'bg-indigo-50 text-indigo-600', hover: 'hover:border-indigo-200' },
+            { id: 'notify', icon: 'campaign', label: 'Gửi thông báo', color: 'bg-rose-50 text-rose-600', hover: 'hover:border-rose-200' },
           ].map((action, idx) => (
             <button 
                 key={idx} 
-                onClick={() => action.id === 'manage' ? navigate('/dashboard/courses') : action.id === 'create-course' ? navigate('/dashboard/create-course') : action.id === 'upload' ? navigate('/dashboard/create-lecture') : setActiveModal(action.id)}
-                className="flex flex-col items-center justify-center p-6 bg-white border border-transparent hover:border-[#13375f]/30 rounded-2xl transition-all shadow-sm hover:shadow-md group active:scale-95"
+                onClick={() => action.id === 'manage' ? navigate('/dashboard/courses') : action.id === 'upload' ? navigate('/dashboard/create-lecture') : setActiveModal(action.id)}
+                className={`flex flex-col items-center justify-center p-8 bg-white border border-slate-100 ${action.hover} rounded-[2rem] transition-all shadow-sm hover:shadow-xl group active:scale-[0.98] relative overflow-hidden`}
             >
-              <span className="material-symbols-outlined text-[#13375f] text-3xl mb-3 group-hover:scale-110 transition-transform">{action.icon}</span>
-              <span className="text-sm font-bold text-[#002143]">{action.label}</span>
+              <div className={`w-16 h-16 ${action.color} rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                <span className="material-symbols-outlined text-3xl">{action.icon}</span>
+              </div>
+              <span className="text-base font-bold text-[#002143] tracking-tight">{action.label}</span>
+              <div className="absolute top-[-10px] right-[-10px] p-2 opacity-10 group-hover:opacity-20 transition-opacity">
+                <span className="material-symbols-outlined text-5xl">{action.icon}</span>
+              </div>
             </button>
           ))}
         </div>

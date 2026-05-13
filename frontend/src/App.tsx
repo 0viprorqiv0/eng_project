@@ -1,7 +1,9 @@
 import React from 'react';
+import { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MainLayout } from './components/MainLayout';
 import { DashboardLayout } from './components/DashboardLayout';
+import { AdminLayout } from './components/AdminLayout';
 import { AuthProvider } from './components/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -16,7 +18,10 @@ import { AboutPage } from './pages/public/AboutPage';
 import { CareersPage } from './pages/public/CareersPage';
 
 // Dashboard Pages
-import { AdminDashboard } from './pages/dashboard/AdminDashboard';
+import { AdminOverviewPage } from './pages/admin/AdminOverviewPage';
+import { AdminUsersPage } from './pages/admin/AdminUsersPage';
+import { AdminCoursesPage } from './pages/admin/AdminCoursesPage';
+import { AdminRecruitmentPage } from './pages/admin/AdminRecruitmentPage';
 import { StudentDashboard } from './pages/dashboard/StudentDashboard';
 import { TeacherDashboard } from './pages/dashboard/TeacherDashboard';
 import { TeacherStudentsPage } from './pages/dashboard/TeacherStudentsPage';
@@ -34,15 +39,25 @@ import { CreateLecturePage } from './pages/courses/CreateLecturePage';
 // Feature Pages
 import { AssignmentsPage } from './pages/features/AssignmentsPage';
 import { SchedulePage } from './pages/features/SchedulePage';
-import { ReportsPage } from './pages/features/ReportsPage';
 import { SettingsPage } from './pages/features/SettingsPage';
 import { AchievementsPage } from './pages/features/AchievementsPage';
 import { LibraryPage } from './pages/features/LibraryPage';
 
+// New Notification Pages
+import { NotificationCenterPage } from './pages/dashboard/NotificationCenterPage';
+import { SendNotificationPage } from './pages/dashboard/SendNotificationPage';
+import { ConsultationRequestsPage } from './pages/dashboard/ConsultationRequestsPage';
+
+// Legal Pages
+import { TermsPage } from './pages/TermsPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { PlacementTestPage } from './pages/public/PlacementTestPage';
+import { AdminPlacementPage } from './pages/admin/AdminPlacementPage';
 
 export default function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
       <BrowserRouter>
 
       <Routes>
@@ -57,9 +72,11 @@ export default function App() {
           <Route path="/careers" element={<CareersPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
         </Route>
 
-        {/* Dashboard Layout */}
+        {/* Dashboard Layout (for Student & Teacher) */}
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route element={<ProtectedRoute allowedRoles={['student', 'admin', 'teacher']} />}>
             <Route path="student" element={<StudentDashboard />} />
@@ -70,10 +87,7 @@ export default function App() {
             <Route path="teacher/students" element={<TeacherStudentsPage />} />
             <Route path="create-course" element={<CreateCoursePage />} />
             <Route path="create-lecture" element={<CreateLecturePage />} />
-          </Route>
-
-          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route path="admin" element={<AdminDashboard />} />
+            <Route path="send-notification" element={<SendNotificationPage />} />
           </Route>
 
           {/* Shared Sub-Pages (accessible by all authenticated users) */}
@@ -81,8 +95,19 @@ export default function App() {
             <Route path="courses" element={<MyCoursesPage />} />
             <Route path="assignments" element={<AssignmentsPage />} />
             <Route path="schedule" element={<SchedulePage />} />
-            <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="notifications" element={<NotificationCenterPage />} />
+            <Route path="consultations" element={<ConsultationRequestsPage />} />
+          </Route>
+
+          {/* Admin Pages (inside DashboardLayout) */}
+          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route path="admin" element={<AdminOverviewPage />} />
+            <Route path="admin/users" element={<AdminUsersPage />} />
+            <Route path="admin/courses" element={<AdminCoursesPage />} />
+            <Route path="admin/recruitment" element={<AdminRecruitmentPage />} />
+            <Route path="admin/consultations" element={<ConsultationRequestsPage />} />
+            <Route path="admin/placement-results" element={<AdminPlacementPage />} />
           </Route>
         </Route>
 
@@ -92,6 +117,7 @@ export default function App() {
         <Route path="/course/:id" element={<CourseDetailPage />} />
         <Route path="/lesson/:id" element={<LessonPage />} />
         <Route path="/quiz/:id" element={<QuizPage />} />
+        <Route path="/placement-test" element={<PlacementTestPage />} />
       </Routes>
     </BrowserRouter>
   </AuthProvider>

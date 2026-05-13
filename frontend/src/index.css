@@ -61,4 +61,43 @@
   body {
     @apply bg-white text-navy font-sans;
   }
+
+  /* Global Select Aesthetic Update */
+  select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 1rem center !important;
+    background-size: 1.1rem !important;
+    padding-right: 3rem !important;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Variant: Filter Style (Xám nhạt) */
+  .select-filter {
+    @apply bg-slate-100/80 border-slate-200 text-slate-600 font-bold text-xs;
+    backdrop-filter: blur(8px);
+  }
+  .select-filter:hover {
+    @apply bg-slate-200/80 border-slate-300 shadow-sm;
+  }
+
+  /* Variant: Form Style (Trắng tinh khôi) */
+  .select-form {
+    @apply bg-white border-2 border-slate-100 text-slate-700 font-bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+  }
+  .select-form:hover {
+    @apply border-slate-200 shadow-md;
+  }
+  .select-form:focus {
+    @apply border-[#13375f] bg-white ring-4 ring-[#13375f]/5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2313375f' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  }
+
+  select:focus {
+    outline: none;
+  }
 }

@@ -50,12 +50,20 @@ class CourseController extends Controller
     /**
      * GET /api/courses/{course} — Public: course detail
      */
-    public function show(Course $course)
+    public function show(Request $request, Course $course)
     {
-        $course->load(['teacher:id,name,bio,avatar_url', 'structures', 'lessons:id,course_id,title,lesson_type,duration_minutes,sort_order,video_path,video_url,materials_path,questions_data,content,description']);
+        $course->load(['teacher:id,name,bio,avatar_url', 'structures', 'lessons' => function($query) {
+            $query->orderBy('sort_order')->select('id', 'course_id', 'title', 'lesson_type', 'duration_minutes', 'sort_order', 'video_path', 'video_url', 'materials_path', 'questions_data', 'content', 'description', 'is_free_preview');
+        }]);
         $course->loadCount('enrollments');
 
-        return response()->json($course);
+        $user = $request->user('sanctum');
+        $isEnrolled = $user ? $course->enrollments()->where('user_id', $user->id)->exists() : false;
+
+        return response()->json([
+            ...$course->toArray(),
+            'user_enrolled' => $isEnrolled || ($user && ($user->isAdmin() || $user->isTeacher())),
+        ]);
     }
 
     /**
@@ -164,18 +172,19 @@ class CourseController extends Controller
         }
 
         $validated = $request->validate([
-            'title'       => 'sometimes|string|max:255',
-            'subtitle'    => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'outcome'     => 'nullable|string',
-            'price'       => 'nullable|string|max:50',
-            'price_amount'=> 'nullable|integer',
-            'category'    => 'nullable|string|max:50',
-            'level'       => 'nullable|string|max:50',
-            'duration'    => 'nullable|string|max:50',
-            'image'       => 'nullable|string',
-            'color'       => 'nullable|string|max:20',
-            'status'      => 'nullable|in:draft,published,archived',
+            'title'        => 'sometimes|string|max:255',
+            'subtitle'     => 'nullable|string|max:255',
+            'description'  => 'nullable|string',
+            'outcome'      => 'nullable|string',
+            'price'        => 'nullable|string|max:50',
+            'price_amount' => 'nullable|integer',
+            'category'     => 'nullable|string|max:50',
+            'level'        => 'nullable|string|max:50',
+            'duration'     => 'nullable|string|max:50',
+            'image'        => 'nullable|string',
+            'color'        => 'nullable|string|max:20',
+            'status'       => 'nullable|in:draft,published,archived',
+            'teacher_id'   => 'nullable|integer|exists:users,id',
         ]);
 
         $course->update($validated);
@@ -230,9 +239,17 @@ class CourseController extends Controller
             'assignment_due_date'  => 'nullable|date',
         ]);
 
-        // Auto sort_order = max + 1
+        // Determine sort_order: If provided, shift others down. Otherwise, max + 1
         $maxOrder = $course->lessons()->max('sort_order') ?? 0;
-        $validated['sort_order'] = $maxOrder + 1;
+        $requestedOrder = $request->input('sort_order');
+        
+        if ($requestedOrder && is_numeric($requestedOrder) && $requestedOrder >= 1) {
+            $validated['sort_order'] = (int)$requestedOrder;
+            // Shift down existing lessons that are at or after this order
+            $course->lessons()->where('sort_order', '>=', $validated['sort_order'])->increment('sort_order');
+        } else {
+            $validated['sort_order'] = $maxOrder + 1;
+        }
         $validated['course_id'] = $course->id;
 
         // Remove assignment-specific fields before creating lesson
@@ -245,7 +262,6 @@ class CourseController extends Controller
 
         $lesson = \App\Models\Lesson::create($validated);
 
-        // Auto-create linked assignment if lesson_type is 'assignment'
         if ($lesson->lesson_type === 'assignment' && $assignmentData['title']) {
             \App\Models\Assignment::create([
                 'course_id'  => $course->id,
@@ -255,6 +271,8 @@ class CourseController extends Controller
                 'description'=> $validated['description'] ?? null,
                 'max_score'  => $assignmentData['max_score'] ?? 100,
                 'due_date'   => $assignmentData['due_date'] ?? now()->addDays(7),
+                'file_url'   => $validated['materials_path'] ?? null,
+                'file_name'  => $validated['materials_path'] ? basename($validated['materials_path']) : null,
             ]);
         }
 
@@ -262,6 +280,8 @@ class CourseController extends Controller
 
         return response()->json($lesson, 201);
     }
+
+
 
     /**
      * PUT /api/lessons/{lesson} — Teacher/Admin: update lesson
@@ -309,6 +329,8 @@ class CourseController extends Controller
             return response()->json(['message' => 'Không có quyền xóa.'], 403);
         }
 
+        $sortOrder = $lesson->sort_order;
+
         // Delete linked assignment if any
         if ($lesson->assignment) {
             $lesson->assignment->submissions()->delete();
@@ -316,6 +338,10 @@ class CourseController extends Controller
         }
 
         $lesson->delete();
+
+        // Shift up existing lessons that were after this one to fix gaps
+        $course->lessons()->where('sort_order', '>', $sortOrder)->decrement('sort_order');
+
         return response()->json(['message' => 'Đã xóa bài giảng.']);
     }
 
@@ -339,6 +365,8 @@ class CourseController extends Controller
             'user_id'   => $user->id,
             'course_id' => $course->id,
         ]);
+
+        \Illuminate\Support\Facades\Cache::forget("course_{$course->id}_performance");
 
         return response()->json([
             'message'    => 'Đã đăng ký khóa học thành công!',
@@ -394,16 +422,27 @@ class CourseController extends Controller
         $enrollments = Enrollment::where('user_id', $user->id)
             ->with(['course' => fn ($q) => $q->with('teacher:id,name')->withCount('lessons')])
             ->get()
-            ->map(fn ($e) => [
-                'id'         => $e->course->id,
-                'name'       => $e->course->title,
-                'instructor' => $e->course->teacher?->name ?? 'N/A',
-                'progress'   => $e->progress,
-                'lessons'    => $e->completed_lessons . '/' . $e->course->lessons_count,
-                'level'      => $e->course->level,
-                'image'      => $e->course->image,
-                'status'     => $e->status,
-            ]);
+            ->map(function ($e) use ($user) {
+                $completedCount = \App\Models\LessonProgress::where('user_id', $user->id)
+                    ->whereHas('lesson', fn ($q) => $q->where('course_id', $e->course_id))
+                    ->where('completed', true)
+                    ->count();
+                
+                $totalLessons = max(1, $e->course->lessons_count);
+                $realProgress = round(($completedCount / $totalLessons) * 100);
+
+                return [
+                    'id'         => $e->course->id,
+                    'name'       => $e->course->title,
+                    'teacher_id' => $e->course->teacher_id,
+                    'instructor' => $e->course->teacher?->name ?? 'N/A',
+                    'progress'   => $realProgress,
+                    'lessons'    => $completedCount . '/' . $e->course->lessons_count,
+                    'level'      => $e->course->level,
+                    'image'      => $e->course->image,
+                    'status'     => $e->status,
+                ];
+            });
 
         return response()->json($enrollments);
     }
@@ -421,12 +460,28 @@ class CourseController extends Controller
 
         $answers = $request->input('answers', []);
         $essayAnswers = $request->input('essay_answers', []);
+        $questionIds = $request->input('question_ids', []); // IDs of questions presented to student
 
         $questionsData = $lesson->questions_data ?? [];
+        
+        // Build a lookup map by question ID
+        $questionsMap = [];
+        foreach ($questionsData as $q) {
+            if (isset($q['id'])) {
+                $questionsMap[$q['id']] = $q;
+            }
+        }
+
+        // If frontend sent question_ids, only grade those. Otherwise grade all answered.
+        $questionsToGrade = !empty($questionIds) ? $questionIds : array_keys($answers);
+        
         $totalMcQuestions = 0;
         $correctAnswers = 0;
 
-        foreach ($questionsData as $q) {
+        foreach ($questionsToGrade as $qId) {
+            $q = $questionsMap[$qId] ?? null;
+            if (!$q) continue;
+            
             if (isset($q['type']) && $q['type'] === 'multiple_choice') {
                 $totalMcQuestions++;
                 $correctIdx = -1;
@@ -437,7 +492,7 @@ class CourseController extends Controller
                     }
                 }
                 
-                if (isset($answers[$q['id']]) && $answers[$q['id']] === $correctIdx) {
+                if (isset($answers[$qId]) && (int)$answers[$qId] === $correctIdx) {
                     $correctAnswers++;
                 }
             }
@@ -457,6 +512,8 @@ class CourseController extends Controller
         );
 
         $percentage = $totalMcQuestions > 0 ? round(($score / $totalMcQuestions) * 100) : 100;
+
+        \Illuminate\Support\Facades\Cache::forget("course_{$lesson->course_id}_performance");
 
         return response()->json([
             'message' => 'Nộp bài thành công',

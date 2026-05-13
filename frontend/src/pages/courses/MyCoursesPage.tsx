@@ -11,6 +11,11 @@ export function MyCoursesPage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Search & Filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('newest');
+
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -26,6 +31,20 @@ export function MyCoursesPage() {
     fetchCourses();
   }, []);
 
+  // Filter & Sort logic
+  const filteredCourses = courses
+    .filter(c => {
+      const matchSearch = !searchQuery || c.name?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchStatus = statusFilter === 'all' || c.status === statusFilter;
+      return matchSearch && matchStatus;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'newest') return (b.id || 0) - (a.id || 0);
+      if (sortBy === 'students') return (b.students || 0) - (a.students || 0);
+      if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+      return 0;
+    });
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-center">
@@ -37,40 +56,76 @@ export function MyCoursesPage() {
             {role === 'admin' ? 'Tổng quan tất cả khóa học trên hệ thống' : role === 'teacher' ? 'Quản lý và theo dõi các khóa học bạn giảng dạy' : 'Theo dõi tiến trình học tập của bạn'}
           </p>
         </div>
-        {(role === 'admin' || role === 'teacher') && (
+        {role === 'admin' && (
           <button
             onClick={() => navigate('/dashboard/create-course')}
             className="bg-[#13375f] text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 hover:shadow-lg transition-all active:scale-95"
           >
             <span className="material-symbols-outlined text-sm">add</span>
-            {role === 'admin' ? 'Thêm khóa học' : 'Tạo khóa học mới'}
+            Thêm khóa học
           </button>
         )}
       </div>
 
-      {/* Filter Bar */}
-      <div className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm">
-        <div className="flex items-center bg-[#f4f3f7] px-4 py-2 rounded-xl flex-1">
-          <span className="material-symbols-outlined text-[#73777f] mr-2 text-lg">search</span>
-          <input className="bg-transparent border-none outline-none focus:ring-0 text-sm w-full placeholder:text-[#43474e]/50" placeholder="Tìm kiếm khóa học..." />
+      {/* Filter Bar — chỉ hiển thị cho Teacher/Admin */}
+      {role !== 'student' && (
+        <>
+        <div className="flex items-center gap-4 bg-white p-4 rounded-2xl shadow-sm">
+          <div className="flex items-center bg-[#f4f3f7] px-4 py-2 rounded-xl flex-1">
+            <span className="material-symbols-outlined text-[#73777f] mr-2 text-lg">search</span>
+            <input 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="bg-transparent border-none outline-none focus:ring-0 text-sm w-full placeholder:text-[#43474e]/50" 
+              placeholder="Tìm kiếm khóa học..." 
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-slate-600 ml-1">
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            )}
+          </div>
+          <select 
+            value={statusFilter}
+            onChange={e => setStatusFilter(e.target.value)}
+            className="bg-[#f4f3f7] border-none rounded-xl text-xs font-bold text-[#002143] px-4 py-3 focus:ring-0 cursor-pointer"
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="Đang bán">Đang bán</option>
+            <option value="Nháp">Nháp</option>
+          </select>
+          <select 
+            value={sortBy}
+            onChange={e => setSortBy(e.target.value)}
+            className="bg-[#f4f3f7] border-none rounded-xl text-xs font-bold text-[#002143] px-4 py-3 focus:ring-0 cursor-pointer"
+          >
+            <option value="newest">Sắp xếp: Mới nhất</option>
+            <option value="students">Nhiều học viên nhất</option>
+            <option value="rating">Đánh giá cao nhất</option>
+          </select>
         </div>
-        <select className="bg-[#f4f3f7] border-none rounded-xl text-xs font-bold text-[#002143] px-4 py-3 focus:ring-0">
-          <option>Tất cả trạng thái</option>
-          <option>Đang bán</option>
-          <option>Nháp</option>
-        </select>
-        <select className="bg-[#f4f3f7] border-none rounded-xl text-xs font-bold text-[#002143] px-4 py-3 focus:ring-0">
-          <option>Sắp xếp: Mới nhất</option>
-          <option>Nhiều học viên nhất</option>
-          <option>Đánh giá cao nhất</option>
-        </select>
-      </div>
+
+        {/* Results count */}
+        {searchQuery && (
+          <p className="text-sm text-[#43474e]">
+            Tìm thấy <span className="font-bold text-[#002143]">{filteredCourses.length}</span> kết quả cho "{searchQuery}"
+          </p>
+        )}
+        </>
+      )}
 
       {/* Student: Card Grid */}
       {role === 'student' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {isLoading && <p>Đang tải...</p>}
-          {!isLoading && courses.map((course, idx) => (
+          {!isLoading && filteredCourses.length === 0 && (
+            <div className="col-span-3 text-center py-12">
+              <span className="material-symbols-outlined text-5xl text-slate-200 mb-3 block">search_off</span>
+              <p className="text-slate-500 font-bold">Không tìm thấy khóa học nào</p>
+              <p className="text-sm text-slate-400 mt-1">Thử thay đổi từ khoá tìm kiếm</p>
+            </div>
+          )}
+          {!isLoading && filteredCourses.map((course, idx) => (
             <div key={idx} className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-50 group hover:shadow-md transition-shadow">
               <div className="h-32 bg-gradient-to-br from-[#002143] to-[#13375f] flex items-center justify-center text-5xl relative">
                 {course.image}
@@ -118,7 +173,13 @@ export function MyCoursesPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading && <tr><td colSpan={7} className="px-6 py-5 text-center">Đang tải...</td></tr>}
-              {!isLoading && courses.map((c, i) => (
+              {!isLoading && filteredCourses.length === 0 && (
+                <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-400">
+                  <span className="material-symbols-outlined text-4xl text-slate-200 block mb-2">search_off</span>
+                  Không tìm thấy khóa học nào
+                </td></tr>
+              )}
+              {!isLoading && filteredCourses.map((c, i) => (
                 <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-4">
@@ -146,7 +207,13 @@ export function MyCoursesPage() {
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold ${c.status === 'Đang bán' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>{c.status}</span>
                   </td>
                   <td className="px-6 py-5 text-right">
-                    <button className="p-2 text-[#51667c] hover:text-[#002143] transition-colors"><span className="material-symbols-outlined">more_vert</span></button>
+                    <button 
+                      onClick={() => navigate(`/course/${c.id}`)}
+                      className="px-4 py-2 bg-[#13375f] text-white text-[10px] font-bold rounded-xl hover:bg-[#002143] transition-colors flex items-center gap-1 ml-auto"
+                    >
+                      <span className="material-symbols-outlined text-sm">visibility</span>
+                      Xem khóa học
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -172,7 +239,13 @@ export function MyCoursesPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {isLoading && <tr><td colSpan={7} className="px-6 py-5 text-center">Đang tải...</td></tr>}
-              {!isLoading && courses.map((c, i) => (
+              {!isLoading && filteredCourses.length === 0 && (
+                <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-400">
+                  <span className="material-symbols-outlined text-4xl text-slate-200 block mb-2">search_off</span>
+                  Không tìm thấy khóa học nào
+                </td></tr>
+              )}
+              {!isLoading && filteredCourses.map((c, i) => (
                 <tr key={i} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-4">

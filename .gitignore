@@ -36,3 +36,6 @@ TESTING_ACCOUNTS.md
 
 # Temp files
 tmp_*
+
+# API Keys file
+key

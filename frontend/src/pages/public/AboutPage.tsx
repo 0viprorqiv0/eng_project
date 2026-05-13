@@ -136,9 +136,9 @@ export function AboutPage() {
           <div className="grid md:grid-cols-4 gap-8">
             {[
               { name: "Mr. Tuấn", role: "Thạc sĩ Ngôn ngữ Anh (Melbourne)", exp: "IELTS 8.5 Writing & Speaking", img: "/Tuấn.png", quote: "Kỹ năng viết không khó, quan trọng là tư duy phản biện." },
-              { name: "Ms. Linh", role: "Tiến sĩ Giáo dục học (Cambridge)", exp: "IELTS 9.0 & C2 Proficiency", img: "/Linh.png", quote: "Hãy biến tiếng Anh thành hơi thở, đừng coi nó là gánh nặng." },
               { name: "Ms. Ngọc", role: "Tiến sĩ Ngôn ngữ học (NUS)", exp: "Chứng chỉ C2 - 10 năm kinh nghiệm", img: "/Ngọc.png", quote: "Giao tiếp là sự kết nối tâm hồn, không chỉ là phát âm đúng." },
-              { name: "Mr. Hoàng", role: "Thạc sĩ Sư phạm Anh (Oxford)", exp: "Tác giả sách luyện thi - IELTS 8.0", img: "/Hoang.png", quote: "Nắm vững quy luật, bạn sẽ thấy ngữ pháp đẹp như bài thơ." }
+              { name: "Ms. Linh", role: "Tiến sĩ Giáo dục học (Cambridge)", exp: "IELTS 9.0 & C2 Proficiency", img: "/Linh.png", quote: "Tiếng yêu này anh dịch được không?" },
+              { name: "Mr. Hoàng", role: "Thạc sĩ Sư phạm Anh (Oxford)", exp: "Tác giả sách luyện thi - IELTS 9.0 - Thông thạo 12 ngôn ngữ", img: "/Hoang.png", quote: "Tiếng yêu này em dịch được không?" }
             ].map((teacher, idx) => (
               <div key={idx} className="group cursor-pointer">
                 <div className="relative overflow-hidden rounded-[2rem] mb-6 aspect-[3/4]">

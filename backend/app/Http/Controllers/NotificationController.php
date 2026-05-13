@@ -13,6 +13,7 @@ class NotificationController extends Controller
     public function index(Request $request)
     {
         $notifications = Notification::where('user_id', $request->user()->id)
+            ->orderByDesc('is_pinned')
             ->orderByDesc('created_at')
             ->limit(30)
             ->get();
@@ -62,6 +63,35 @@ class NotificationController extends Controller
             ->update(['is_read' => true]);
 
         return response()->json(['message' => 'Đã đánh dấu tất cả đã đọc']);
+    }
+
+    /**
+     * DELETE /api/notifications/{id} — Delete single notification
+     */
+    public function destroy(Request $request, $id)
+    {
+        $notification = Notification::where('user_id', $request->user()->id)
+            ->findOrFail($id);
+
+        $notification->delete();
+
+        return response()->json(['message' => 'Đã xóa thông báo']);
+    }
+
+    /**
+     * POST /api/notifications/{id}/toggle-pin — Pin/Unpin notification
+     */
+    public function togglePin(Request $request, $id)
+    {
+        $notification = Notification::where('user_id', $request->user()->id)
+            ->findOrFail($id);
+
+        $notification->update(['is_pinned' => !$notification->is_pinned]);
+
+        return response()->json([
+            'message' => $notification->is_pinned ? 'Đã ghim' : 'Đã bỏ ghim',
+            'is_pinned' => $notification->is_pinned
+        ]);
     }
 
     /**

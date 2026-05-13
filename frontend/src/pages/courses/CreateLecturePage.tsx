@@ -13,14 +13,10 @@ import {
   Plus, Trash2, GripVertical, PenLine,
   CheckCircle2, MessageSquare, Paperclip, Image
 } from 'lucide-react';
+import { QuizBuilderForm, type QuizQuestion } from './components/QuizBuilderForm';
+import { MediaUploader } from './components/MediaUploader';
 
-/* ─── Quiz question types ─── */
-interface QuizOption { id: string; text: string; isCorrect: boolean; }
-interface QuizQuestion {
-  id: string; type: 'multiple_choice' | 'essay';
-  text: string; options: QuizOption[];
-  prompt?: string; attachmentHint?: string;
-}
+/* Quiz types imported from QuizBuilderForm */
 
 /* ─── Lesson type config ─── */
 const LESSON_TYPES = [
@@ -75,7 +71,9 @@ export function CreateLecturePage() {
   const [courses, setCourses] = useState<any[]>([]);
   const [selectedCourse, setSelectedCourse] = useState('');
   const [isCourseOpen, setIsCourseOpen] = useState(false);
-  const [lessonType, setLessonType] = useState('video');
+  const [lessonType, setLessonType] = useState(() => {
+    return new URLSearchParams(window.location.search).get('type') || 'video';
+  });
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
@@ -98,9 +96,12 @@ export function CreateLecturePage() {
   const [deadlineDays, setDeadlineDays] = useState(7);
   const [allowLateSubmit, setAllowLateSubmit] = useState(false);
 
+  // Lesson Position
+  const [courseLessons, setCourseLessons] = useState<any[]>([]);
+  const [insertAfterLessonId, setInsertAfterLessonId] = useState<string>('');
+
   // File upload
   const [file, setFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedPath, setUploadedPath] = useState('');
   const [subtitleFile, setSubtitleFile] = useState<File | null>(null);
@@ -116,54 +117,14 @@ export function CreateLecturePage() {
     ], prompt: '' },
   ]);
 
-  const addQuestion = (type: 'multiple_choice' | 'essay') => {
-    setQuestions(prev => [...prev, {
-      id: Date.now().toString(), type, text: '',
-      options: type === 'multiple_choice' ? [
-        { id: 'a', text: '', isCorrect: true },
-        { id: 'b', text: '', isCorrect: false },
-        { id: 'c', text: '', isCorrect: false },
-      ] : [],
-      prompt: type === 'essay' ? '' : undefined,
-    }]);
-  };
 
-  const removeQuestion = (qId: string) => setQuestions(prev => prev.filter(q => q.id !== qId));
-
-  const updateQuestion = (qId: string, updates: Partial<QuizQuestion>) => {
-    setQuestions(prev => prev.map(q => q.id === qId ? { ...q, ...updates } : q));
-  };
-
-  const addOption = (qId: string) => {
-    setQuestions(prev => prev.map(q => q.id === qId ? {
-      ...q, options: [...q.options, { id: Date.now().toString(), text: '', isCorrect: false }]
-    } : q));
-  };
-
-  const removeOption = (qId: string, oId: string) => {
-    setQuestions(prev => prev.map(q => q.id === qId ? {
-      ...q, options: q.options.filter(o => o.id !== oId)
-    } : q));
-  };
-
-  const toggleCorrect = (qId: string, oId: string) => {
-    setQuestions(prev => prev.map(q => q.id === qId ? {
-      ...q, options: q.options.map(o => ({ ...o, isCorrect: o.id === oId }))
-    } : q));
-  };
-
-  const updateOptionText = (qId: string, oId: string, text: string) => {
-    setQuestions(prev => prev.map(q => q.id === qId ? {
-      ...q, options: q.options.map(o => o.id === oId ? { ...o, text } : o)
-    } : q));
-  };
 
   // UI
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Fetch courses for the dropdown
+  // Fetch courses for the dropdown and get query params
   useEffect(() => {
     const fetchCourses = async () => {
       try {
@@ -172,6 +133,7 @@ export function CreateLecturePage() {
         // Pre-select from URL query param ?course=ID
         const params = new URLSearchParams(window.location.search);
         const preselect = params.get('course');
+        
         if (preselect && res?.some((c: any) => c.id?.toString() === preselect)) {
           setSelectedCourse(preselect);
         } else if (res?.length > 0) {
@@ -186,23 +148,25 @@ export function CreateLecturePage() {
 
   const selectedCourseName = courses.find(c => c.id?.toString() === selectedCourse)?.name || 'Chọn khóa học...';
 
-  /* ─── Drag & Drop ─── */
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const dropped = e.dataTransfer.files[0];
-    if (dropped) setFile(dropped);
-  }, []);
+  // Fetch lessons for selected course to allow position selection
+  useEffect(() => {
+    if (!selectedCourse) {
+      setCourseLessons([]);
+      setInsertAfterLessonId('');
+      return;
+    }
+    const fetchLessons = async () => {
+      try {
+        const res = await api.get(`/courses/${selectedCourse}/lessons`);
+        // Backend returns { course: {...}, lessons: [...] }
+        setCourseLessons(res?.lessons || res?.data || []);
+        setInsertAfterLessonId(''); // Reset when course changes
+      } catch (e) {
+        console.error('Failed to load lessons for position selection', e);
+      }
+    };
+    fetchLessons();
+  }, [selectedCourse]);
 
   /* ─── Upload file to server ─── */
   const uploadFile = async (fileToUpload: File): Promise<string> => {
@@ -256,6 +220,14 @@ export function CreateLecturePage() {
         subtitlePath = await uploadFile(subtitleFile);
       }
 
+      let sortOrder;
+      if (insertAfterLessonId) {
+        const targetLesson = courseLessons.find(l => l.id?.toString() === insertAfterLessonId);
+        if (targetLesson) {
+          sortOrder = targetLesson.sort_order + 1; // Insert right after
+        }
+      }
+
       const payload: any = {
         title,
         lesson_type: lessonType,
@@ -264,6 +236,7 @@ export function CreateLecturePage() {
         is_free_preview: isFreePreview,
         unlock_condition: unlockCondition,
         unlock_days: 0,
+        sort_order: sortOrder,
       };
 
       // Assign file path based on lesson type
@@ -281,6 +254,17 @@ export function CreateLecturePage() {
       // Include quiz questions if quiz type
       if (lessonType === 'quiz' && questions.length > 0) {
         payload.questions_data = questions;
+      }
+      
+      // Pass assignment fields to auto-create linked assignment
+      if (lessonType === 'assignment') {
+        payload.assignment_title = title;
+        payload.assignment_max_score = 100;
+        
+        // Calculate due date (today + deadlineDays)
+        const due = new Date();
+        due.setDate(due.getDate() + (deadlineDays || 7));
+        payload.assignment_due_date = due.toISOString().split('T')[0];
       }
 
       await api.post(`/courses/${selectedCourse}/lessons`, payload);
@@ -449,6 +433,32 @@ export function CreateLecturePage() {
                 {errors.title && <p className="text-red-500 text-xs mt-1 font-medium">{errors.title}</p>}
               </div>
 
+              {/* Position selector */}
+              {courseLessons.length > 0 && (
+                <div>
+                  <label className="block text-xs font-bold text-[#43474e] mb-2 uppercase tracking-wider">Vị trí bài học</label>
+                  <div className="relative">
+                    <select
+                      value={insertAfterLessonId}
+                      onChange={(e) => setInsertAfterLessonId(e.target.value)}
+                      className="w-full px-4 py-3.5 bg-[#f4f3f7] rounded-xl text-sm text-[#002143] font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all border border-transparent appearance-none"
+                    >
+                      <option value="">Thêm vào cuối khóa học</option>
+                      {courseLessons.map((l: any) => (
+                        <option key={l.id} value={l.id?.toString()}>
+                          Chèn vào sau: {l.title}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#73777f] pointer-events-none" />
+                  </div>
+                  <p className="text-[10px] text-[#73777f] mt-1.5 flex items-center gap-1">
+                    <Lightbulb className="w-3 h-3 text-amber-500" />
+                    Mẹo: Mọi nội dung phía dưới sẽ tự động được đẩy lùi 1 vị trí
+                  </p>
+                </div>
+              )}
+
               {/* Description */}
               <div>
                 <label className="block text-xs font-bold text-[#43474e] mb-2 uppercase tracking-wider">Mô tả chi tiết</label>
@@ -465,230 +475,21 @@ export function CreateLecturePage() {
 
           {/* ═══ SPECIALIZED CONTENT SECTIONS ═══ */}
           <AnimatePresence mode="wait">
-            {/* ── VIDEO UPLOAD ── */}
-            {lessonType === 'video' && (
-              <motion.div key="video-upload" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                className="bg-white rounded-3xl p-7 shadow-sm border border-black/5">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-[#002143] rounded-xl flex items-center justify-center">
-                    <Video className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="font-headline text-lg font-extrabold text-[#002143]">Nội dung Video</h3>
-                </div>
-                {file ? (
-                  <div className="border-2 border-dashed border-[#002143]/20 rounded-2xl p-6 bg-[#f4f3f7]/50">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-xl bg-[#002143]/10 flex items-center justify-center">
-                        <Video className="w-7 h-7 text-[#002143]" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-[#002143] truncate">{file.name}</p>
-                        <p className="text-xs text-[#73777f] mt-0.5">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                        {uploadProgress > 0 && uploadProgress < 100 && (
-                          <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-[#002143] to-[#e65540] rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
-                          </div>
-                        )}
-                        {uploadedPath && <p className="text-xs text-green-600 font-bold mt-1">✓ Đã tải lên thành công</p>}
-                      </div>
-                      <button onClick={() => { setFile(null); setUploadedPath(''); setUploadProgress(0); }}
-                        className="p-2 text-[#73777f] hover:text-red-500 transition-colors"><X className="w-5 h-5" /></button>
-                    </div>
-                  </div>
-                ) : (
-                  <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all ${isDragging ? 'border-[#e65540] bg-red-50/50' : 'border-[#d4d6db] bg-[#f8f8fa] hover:border-[#002143]/30'}`}>
-                    <div className="w-14 h-14 mx-auto mb-4 bg-[#002143] rounded-2xl flex items-center justify-center shadow-lg">
-                      <Upload className="w-7 h-7 text-white" />
-                    </div>
-                    <p className="text-sm font-bold text-[#002143] mb-1">Kéo và thả tệp video của bạn tại đây</p>
-                    <p className="text-xs text-[#73777f] mb-5">Hỗ trợ MP4, MOV, AVI (Tối đa 2GB)</p>
-                    <button type="button" className="px-6 py-2.5 bg-white text-[#002143] text-sm font-bold rounded-xl border border-[#d4d6db] hover:bg-[#f4f3f7] active:scale-95 transition-all">
-                      Chọn tệp từ máy tính
-                    </button>
-                    <input ref={fileInputRef} type="file" accept=".mp4,.webm,.mov,.avi" className="hidden"
-                      onChange={e => e.target.files?.[0] && setFile(e.target.files[0])} />
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {/* ── DOCUMENT UPLOAD ── */}
-            {lessonType === 'document' && (
-              <motion.div key="doc-upload" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                className="bg-white rounded-3xl p-7 shadow-sm border border-black/5">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-[#002143] rounded-xl flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="font-headline text-lg font-extrabold text-[#002143]">Khu vực tải lên tài liệu</h3>
-                </div>
-                {file ? (
-                  <div className="border-2 border-dashed border-[#002143]/20 rounded-2xl p-6 bg-[#f4f3f7]/50">
-                    <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-xl bg-[#002143]/10 flex items-center justify-center">
-                        <FileText className="w-7 h-7 text-[#002143]" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-[#002143] truncate">{file.name}</p>
-                        <p className="text-xs text-[#73777f] mt-0.5">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                        {uploadProgress > 0 && uploadProgress < 100 && (
-                          <div className="mt-2 h-2 bg-slate-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-[#002143] to-[#e65540] rounded-full transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
-                          </div>
-                        )}
-                        {uploadedPath && <p className="text-xs text-green-600 font-bold mt-1">✓ Đã tải lên thành công</p>}
-                      </div>
-                      <button onClick={() => { setFile(null); setUploadedPath(''); setUploadProgress(0); }}
-                        className="p-2 text-[#73777f] hover:text-red-500 transition-colors"><X className="w-5 h-5" /></button>
-                    </div>
-                  </div>
-                ) : (
-                  <div onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${isDragging ? 'border-[#e65540] bg-red-50/50' : 'border-[#d4d6db] bg-[#f8f8fa] hover:border-[#002143]/30'}`}>
-                    <div className="w-14 h-14 mx-auto mb-4 bg-[#002143] rounded-2xl flex items-center justify-center shadow-lg">
-                      <Upload className="w-7 h-7 text-white" />
-                    </div>
-                    <p className="text-sm font-bold text-[#002143] mb-1">Kéo và thả tệp tại đây hoặc chọn từ máy tính</p>
-                    {/* Format badges */}
-                    <div className="flex items-center justify-center gap-2 my-4">
-                      {[
-                        { ext: 'PDF', color: 'bg-red-500' },
-                        { ext: 'DOCX', color: 'bg-blue-500' },
-                        { ext: 'PPTX', color: 'bg-orange-500' },
-                      ].map(f => (
-                        <span key={f.ext} className={`${f.color} text-white text-[10px] font-bold px-3 py-1 rounded-full`}>
-                          {f.ext}
-                        </span>
-                      ))}
-                    </div>
-                    <p className="text-xs text-[#73777f] mb-4">Dung lượng tối đa: 50MB</p>
-                    <button type="button" className="px-8 py-3 bg-[#002143] text-white text-sm font-bold rounded-xl hover:bg-[#1e3a5f] active:scale-95 transition-all shadow-lg">
-                      Chọn Tệp
-                    </button>
-                    <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx,.ppt,.pptx" className="hidden"
-                      onChange={e => e.target.files?.[0] && setFile(e.target.files[0])} />
-                  </div>
-                )}
-              </motion.div>
+            {/* ── VIDEO / DOCUMENT UPLOAD ── */}
+            {(lessonType === 'video' || lessonType === 'document') && (
+              <MediaUploader
+                lessonType={lessonType}
+                file={file}
+                onFileChange={setFile}
+                uploadProgress={uploadProgress}
+                uploadedPath={uploadedPath}
+                onClearUpload={() => { setUploadedPath(''); setUploadProgress(0); }}
+              />
             )}
 
             {/* ── QUIZ BUILDER ── */}
             {lessonType === 'quiz' && (
-              <motion.div key="quiz-builder" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                className="space-y-5">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#002143] rounded-xl flex items-center justify-center">
-                      <HelpCircle className="w-5 h-5 text-white" />
-                    </div>
-                    <h3 className="font-headline text-lg font-extrabold text-[#002143]">Soạn câu hỏi</h3>
-                  </div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={() => addQuestion('multiple_choice')}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-[#002143] text-white text-xs font-bold rounded-xl hover:bg-[#1e3a5f] active:scale-95 transition-all">
-                      <Plus className="w-4 h-4" /> Trắc nghiệm
-                    </button>
-                    <button type="button" onClick={() => addQuestion('essay')}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-[#e65540] text-white text-xs font-bold rounded-xl hover:bg-[#d94432] active:scale-95 transition-all">
-                      <PenLine className="w-4 h-4" /> Tự luận
-                    </button>
-                  </div>
-                </div>
-
-                {/* Question cards */}
-                {questions.map((q, idx) => (
-                  <motion.div key={q.id} layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                    className="bg-white rounded-3xl p-6 shadow-sm border border-black/5 relative">
-                    {/* Question header */}
-                    <div className="flex items-center gap-3 mb-5">
-                      <div className="w-9 h-9 bg-[#002143] rounded-full flex items-center justify-center">
-                        <span className="text-white text-sm font-extrabold">{String(idx + 1).padStart(2, '0')}</span>
-                      </div>
-                      <span className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full ${
-                        q.type === 'multiple_choice' ? 'bg-[#cee5ff] text-[#002143]' : 'bg-[#fef2f0] text-[#e65540]'
-                      }`}>
-                        {q.type === 'multiple_choice' ? 'TRẮC NGHIỆM' : 'TỰ LUẬN / WRITING'}
-                      </span>
-                      <div className="flex-1" />
-                      {questions.length > 1 && (
-                        <button onClick={() => removeQuestion(q.id)}
-                          className="p-1.5 text-[#c8cad0] hover:text-red-500 transition-colors rounded-lg hover:bg-red-50">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-
-                    {q.type === 'multiple_choice' ? (
-                      <>
-                        {/* Question text */}
-                        <textarea value={q.text} onChange={e => updateQuestion(q.id, { text: e.target.value })}
-                          placeholder="Nhập câu hỏi trắc nghiệm..."
-                          rows={2}
-                          className="w-full px-4 py-3 bg-[#f4f3f7] rounded-xl text-sm text-[#002143] font-medium placeholder-[#73777f] focus:outline-none focus:ring-2 focus:ring-[#002143]/15 focus:bg-white transition-all resize-none border border-transparent mb-4" />
-                        {/* Options */}
-                        <div className="space-y-2.5">
-                          {q.options.map(opt => (
-                            <div key={opt.id} className="flex items-center gap-3 group">
-                              <button type="button" onClick={() => toggleCorrect(q.id, opt.id)}
-                                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all ${
-                                  opt.isCorrect ? 'border-green-500 bg-green-500' : 'border-[#d4d6db] hover:border-[#73777f]'
-                                }`}>
-                                {opt.isCorrect && <Check className="w-3.5 h-3.5 text-white" />}
-                              </button>
-                              <input type="text" value={opt.text} onChange={e => updateOptionText(q.id, opt.id, e.target.value)}
-                                placeholder="Nhập lựa chọn..."
-                                className="flex-1 px-3 py-2.5 bg-[#f4f3f7] rounded-lg text-sm text-[#002143] font-medium placeholder-[#73777f] focus:outline-none focus:ring-1 focus:ring-[#002143]/15 focus:bg-white border border-transparent transition-all" />
-                              {opt.isCorrect && (
-                                <span className="text-[9px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md uppercase whitespace-nowrap">Đáp án đúng</span>
-                              )}
-                              {q.options.length > 2 && (
-                                <button onClick={() => removeOption(q.id, opt.id)}
-                                  className="opacity-0 group-hover:opacity-100 p-1 text-[#c8cad0] hover:text-red-500 transition-all">
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        <button type="button" onClick={() => addOption(q.id)}
-                          className="mt-3 flex items-center gap-2 text-xs font-bold text-[#002143] hover:text-[#e65540] transition-colors">
-                          <Plus className="w-3.5 h-3.5" /> Thêm lựa chọn
-                        </button>
-                      </>
-                    ) : (
-                      /* Essay question */
-                      <>
-                        <div className="mb-3">
-                          <label className="block text-[10px] font-bold text-[#73777f] mb-2 uppercase tracking-wider">PROMPT ĐỀ BÀI</label>
-                          <textarea value={q.prompt || ''} onChange={e => updateQuestion(q.id, { prompt: e.target.value })}
-                            placeholder="In some countries, young people are encouraged to work or travel for a year between finishing high school and starting university. Discuss the advantages and disadvantages."
-                            rows={4}
-                            className="w-full px-4 py-3 bg-[#f4f3f7] rounded-xl text-sm text-[#002143] font-medium placeholder-[#73777f] focus:outline-none focus:ring-2 focus:ring-[#002143]/15 focus:bg-white transition-all resize-none border border-transparent" />
-                        </div>
-                        <div className="flex items-center gap-3 px-4 py-3 bg-[#f4f3f7] rounded-xl text-sm text-[#73777f]">
-                          <Paperclip className="w-4 h-4 shrink-0" />
-                          <span>Đính kèm tài liệu tham khảo hoặc hình ảnh (Không bắt buộc)</span>
-                        </div>
-                      </>
-                    )}
-                  </motion.div>
-                ))}
-
-                {/* Quiz summary card */}
-                <div className="bg-[#f4f3f7] rounded-2xl p-5">
-                  <p className="text-[10px] font-bold text-[#73777f] uppercase tracking-wider mb-3">TỔNG QUAN BÀI THI</p>
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="flex justify-between"><span className="text-[#73777f]">Số câu hỏi</span><span className="font-bold text-[#002143]">{questions.length} câu</span></div>
-                    <div className="flex justify-between"><span className="text-[#73777f]">Trắc nghiệm</span><span className="font-bold text-[#002143]">{questions.filter(q => q.type === 'multiple_choice').length}</span></div>
-                    <div className="flex justify-between"><span className="text-[#73777f]">Tự luận</span><span className="font-bold text-[#002143]">{questions.filter(q => q.type === 'essay').length}</span></div>
-                    <div className="flex justify-between"><span className="text-[#73777f]">Tổng điểm</span><span className="font-bold text-[#002143]">100 điểm</span></div>
-                  </div>
-                </div>
-              </motion.div>
+              <QuizBuilderForm questions={questions} onChange={setQuestions} />
             )}
 
             {/* ── ASSIGNMENT BUILDER ── */}
@@ -722,8 +523,8 @@ export function CreateLecturePage() {
                       <button onClick={() => { setFile(null); setUploadedPath(''); }} className="p-1 text-[#73777f] hover:text-red-500"><X className="w-4 h-4" /></button>
                     </div>
                   ) : (
-                    <div onClick={() => fileInputRef.current?.click()} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
-                      className={`flex items-center gap-3 p-4 border-2 border-dashed rounded-xl cursor-pointer transition-all ${isDragging ? 'border-[#e65540] bg-red-50/50' : 'border-[#d4d6db] hover:border-[#002143]/30'}`}>
+                    <div onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-3 p-4 border-2 border-dashed rounded-xl cursor-pointer transition-all border-[#d4d6db] hover:border-[#002143]/30">
                       <Paperclip className="w-5 h-5 text-[#73777f] shrink-0" />
                       <span className="text-sm text-[#73777f]">Đính kèm đề bài, rubric hoặc tài liệu tham khảo</span>
                     </div>

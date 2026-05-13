@@ -275,7 +275,7 @@ export function CourseDiscoveryPage() {
         <div className="max-w-4xl mx-auto px-4 relative z-10">
           <h2 className="text-4xl lg:text-5xl font-black mb-8">Chưa biết bắt đầu từ đâu?</h2>
           <p className="text-xl mb-12 opacity-90">Làm bài test năng lực miễn phí ngay để nhận lộ trình học tập được thiết kế riêng cho bạn.</p>
-          <button className="px-12 py-5 bg-beered text-white font-bold rounded-full hover:scale-105 transition-transform shadow-2xl text-xl">
+          <button onClick={() => navigate('/placement-test')} className="px-12 py-5 bg-beered text-white font-bold rounded-full hover:scale-105 transition-transform shadow-2xl text-xl">
             Test năng lực ngay
           </button>
         </div>

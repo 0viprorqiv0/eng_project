@@ -143,7 +143,7 @@ class LessonFeatureController extends Controller
 
         $query = Discussion::where('course_id', $courseId)
             ->whereNull('parent_id') // top-level only
-            ->with(['user:id,name,avatar_url', 'replies' => fn ($q) => $q->with('user:id,name,avatar_url')->orderBy('created_at')->limit(10)])
+            ->with(['user:id,name,avatar_url,role', 'replies' => fn ($q) => $q->with('user:id,name,avatar_url,role')->orderBy('created_at')->limit(50)])
             ->withCount('replies')
             ->orderByDesc('created_at');
 
@@ -155,15 +155,19 @@ class LessonFeatureController extends Controller
 
         $paginated->through(fn ($d) => [
             'id' => $d->id,
+            'user_id' => $d->user_id,
             'author' => $d->user->name,
             'avatar_url' => $d->user->avatar_url,
+            'role' => $d->user->role,
             'content' => $d->content,
             'date' => $d->created_at->diffForHumans(),
             'replies_count' => $d->replies_count,
             'replies' => $d->replies->map(fn ($r) => [
                 'id' => $r->id,
+                'user_id' => $r->user_id,
                 'author' => $r->user->name,
                 'avatar_url' => $r->user->avatar_url,
+                'role' => $r->user->role,
                 'content' => $r->content,
                 'date' => $r->created_at->diffForHumans(),
             ]),
@@ -192,12 +196,14 @@ class LessonFeatureController extends Controller
             'content'   => $validated['content'],
         ]);
 
-        $discussion->load('user:id,name,avatar_url');
+        $discussion->load('user:id,name,avatar_url,role');
 
         return response()->json([
             'id' => $discussion->id,
+            'user_id' => $discussion->user_id,
             'author' => $discussion->user->name,
             'avatar_url' => $discussion->user->avatar_url,
+            'role' => $discussion->user->role,
             'content' => $discussion->content,
             'date' => 'Vừa xong',
             'replies_count' => 0,
@@ -210,10 +216,16 @@ class LessonFeatureController extends Controller
      */
     public function destroyDiscussion(Request $request, int $id)
     {
-        $discussion = Discussion::where('id', $id)
-            ->where('user_id', $request->user()->id)
-            ->firstOrFail();
+        $user = $request->user();
+        $discussion = Discussion::findOrFail($id);
 
+        // Allow owner, admin, or teacher to delete
+        if ($discussion->user_id !== $user->id && !$user->isAdmin() && !$user->isTeacher()) {
+            return response()->json(['message' => 'Không có quyền xóa.'], 403);
+        }
+
+        // Delete all replies too
+        $discussion->replies()->delete();
         $discussion->delete();
         return response()->json(['message' => 'Đã xóa bài viết.']);
     }

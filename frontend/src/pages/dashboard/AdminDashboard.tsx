@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../components/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
+import { BookOpen, PenTool, Globe, History } from 'lucide-react';
 
 export function AdminDashboard() {
   const { user } = useAuth();
@@ -14,6 +15,7 @@ export function AdminDashboard() {
   const [revenue, setRevenue] = useState<any[]>([]);
   const [recentEnrollments, setRecentEnrollments] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedMonthData, setSelectedMonthData] = useState<any>(null);
 
   // Modal
   const [showCreateCourse, setShowCreateCourse] = useState(false);
@@ -85,40 +87,50 @@ export function AdminDashboard() {
         {/* Revenue Chart Section */}
         <section className="lg:col-span-2 space-y-6">
           <div className="bg-white p-8 rounded-[2rem] shadow-sm">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex justify-between items-center mb-8 pb-4 border-b border-slate-100">
               <div>
                 <h3 className="text-xl font-headline font-bold text-[#002143]">Phân tích doanh thu</h3>
-                <p className="text-sm text-[#43474e]">Tăng trưởng doanh thu 6 tháng gần nhất</p>
+                <p className="text-sm text-[#43474e] mt-1">Tăng trưởng doanh thu 6 tháng gần nhất</p>
               </div>
-              <select className="bg-[#f4f3f7] border-none rounded-xl text-xs font-bold text-[#002143] px-4 py-2 focus:ring-0">
-                <option>Năm 2024</option>
-                <option>Năm 2023</option>
-              </select>
+              <div className="cursor-pointer text-[11px] px-3 py-1.5 bg-slate-100/80 hover:bg-slate-200 rounded-lg font-bold text-[#002143] flex items-center gap-1 transition-colors">
+                Năm {new Date().getFullYear()} <span className="material-symbols-outlined text-[14px]">keyboard_arrow_down</span>
+              </div>
             </div>
-            <div className="h-64 flex items-end justify-between gap-4 px-2 relative">
-              <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
-                {[0, 1, 2, 3].map(i => <div key={i} className="w-full border-t border-slate-100 h-0"></div>)}
-              </div>
-              {revenue.length > 0 ? revenue.map((item, i) => {
-                const maxRev = Math.max(...revenue.map(r => r.revenue), 1);
-                const h = (item.revenue / maxRev) * 100;
-                const months = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
-                return (
-                  <div key={i} className="flex-1 bg-[#d4e3ff]/30 rounded-t-lg relative group" style={{ height: `${Math.max(h, 2) + 10}%` }}>
-                    <div className="absolute inset-x-0 bottom-0 bg-[#002143] rounded-t-lg group-hover:opacity-80 transition-all duration-500" style={{ height: `${h}%` }}></div>
-                    <div className="absolute opacity-0 group-hover:opacity-100 -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded font-bold transition-opacity whitespace-nowrap z-10">{Number(item.revenue).toLocaleString()}đ</div>
-                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[#73777f]">{months[i]}</span>
-                  </div>
-                );
-              }) : [
-                { h: 60, label: 'JAN' }, { h: 40, label: 'FEB' }, { h: 85, label: 'MAR' },
-                { h: 30, label: 'APR' }, { h: 75, label: 'MAY' }, { h: 95, label: 'JUN' },
-              ].map((bar, i) => (
-                <div key={i} className="flex-1 bg-[#d4e3ff]/30 rounded-t-lg relative group" style={{ height: `${bar.h + 20}%` }}>
-                  <div className={`absolute inset-x-0 bottom-0 ${i === 5 ? 'bg-[#73000a]' : 'bg-[#002143]'} rounded-t-lg group-hover:opacity-80 transition-all duration-500`} style={{ height: `${bar.h}%` }}></div>
-                  <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[#73777f]">{bar.label}</span>
-                </div>
-              ))}
+            
+            <div className="flex items-end justify-between gap-2 h-56 px-2">
+              {isLoading ? (
+                  <div className="w-full flex items-center justify-center text-[#51667c] text-sm italic">Đang tải dữ liệu...</div>
+              ) : revenue.length > 0 ? (
+                  revenue.map((m, i) => {
+                      const maxRevenue = Math.max(...revenue.map(d => d.revenue), 1);
+                      const h = (m.revenue / maxRevenue) * 100;
+                      const isMax = h >= 99.9;
+                      const monthsMap = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                      return (
+                          <div key={i} className="flex-1 flex flex-col items-center gap-2 group relative">
+                              <div className="w-full relative flex items-end justify-center h-48">
+                                  {/* Track background */}
+                                  <div className="absolute inset-x-0 bottom-0 top-0 bg-[#f4f7fb] rounded-t-md"></div>
+                                  
+                                  {/* Fill bar */}
+                                  <div
+                                      onClick={() => setSelectedMonthData(m)}
+                                      className={`relative z-10 w-full rounded-t-md transition-all duration-700 cursor-pointer ${isMax ? 'bg-[#6b1418] hover:bg-[#4d0c10]' : 'bg-[#18283f] hover:bg-[#0c141d]'}`}
+                                      style={{ height: `${Math.max(h, 1)}%` }}
+                                  />
+                                  
+                                  {/* Tooltip */}
+                                  <div className="absolute bottom-full mb-3 opacity-0 group-hover:opacity-100 bg-[#002143] text-white text-[11px] font-bold py-1.5 px-2.5 rounded-lg whitespace-nowrap z-20 pointer-events-none transition-all shadow-xl shadow-[#002143]/20 translate-y-2 group-hover:translate-y-0">
+                                      {Number(m.revenue).toLocaleString('vi-VN')} VNĐ
+                                  </div>
+                              </div>
+                              <span className="text-[10px] font-extrabold tracking-widest text-[#51667c] uppercase">{monthsMap[m.month - 1]}</span>
+                          </div>
+                      );
+                  })
+              ) : (
+                  <div className="w-full flex items-center justify-center text-[#51667c] text-sm italic border-t border-slate-100 h-full">Không có dữ liệu doanh thu</div>
+              )}
             </div>
           </div>
 
@@ -126,7 +138,12 @@ export function AdminDashboard() {
           <div className="bg-white p-8 rounded-[2rem] shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-headline font-bold text-[#002143]">Học viên mới nhất</h3>
-              <button onClick={() => navigate('/dashboard/reports')} className="text-[#002143] text-sm font-bold hover:underline">Xem tất cả</button>
+              <button 
+                onClick={() => navigate('/dashboard/admin/users')}
+                className="text-xs font-bold text-[#002143] hover:text-[#73000a] flex items-center gap-1 transition-colors group"
+              >
+                Xem tất cả <span className="material-symbols-outlined text-[16px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+              </button>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
@@ -179,29 +196,39 @@ export function AdminDashboard() {
           <div className="bg-[#f4f3f7] p-8 rounded-[2rem]">
             <h3 className="text-lg font-headline font-bold text-[#002143] mb-6">Khóa học phổ biến nhất</h3>
             <div className="space-y-6">
-              {[
-                { name: 'IELTS Listening Strategies', students: '850 học viên', rating: '4.9/5 ★' },
-                { name: 'Academic Writing 101', students: '620 học viên', rating: '4.7/5 ★' },
-                { name: 'TOEIC Vocabulary Pro', students: '540 học viên', rating: '4.8/5 ★' },
-              ].map((course, i) => (
-                <div key={i} className="flex gap-4 items-center group cursor-pointer">
-                  <div className="w-16 h-16 rounded-2xl bg-white flex-shrink-0 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[#002143] text-2xl group-hover:scale-110 transition-transform duration-500">menu_book</span>
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-[#002143] text-sm line-clamp-1">{course.name}</h4>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[#4b0004] font-bold text-xs">{course.students}</span>
-                      <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                      <span className="text-[#43474e] text-[10px]">{course.rating}</span>
+              {stats.popular_courses && stats.popular_courses.length > 0 ? (
+                stats.popular_courses.map((course: any, i: number) => (
+                  <div key={i} className="flex gap-4 items-center group cursor-pointer">
+                    {(() => {
+                      const icons = [BookOpen, PenTool, Globe, History];
+                      const colors = [
+                        'bg-blue-50 text-blue-600',
+                        'bg-indigo-50 text-indigo-600',
+                        'bg-cyan-50 text-cyan-600',
+                        'bg-amber-50 text-amber-600',
+                      ];
+                      const Icon = icons[i % icons.length];
+                      const color = colors[i % colors.length];
+                      return (
+                        <div className={`w-14 h-14 rounded-2xl ${color} flex-shrink-0 flex items-center justify-center`}>
+                          <Icon size={24} className="group-hover:scale-110 transition-transform duration-500" />
+                        </div>
+                      );
+                    })()}
+                    <div className="flex-1">
+                      <h4 className="font-bold text-[#002143] text-sm line-clamp-1">{course.name}</h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-[#4b0004] font-bold text-xs">{course.students} học viên</span>
+                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                        <span className="text-[#43474e] text-[10px]">{course.rating}/5 ★</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-xs text-[#43474e] text-center py-4">Chưa có dữ liệu khóa học</p>
+              )}
             </div>
-            <button onClick={() => navigate('/dashboard/reports')} className="w-full mt-8 py-3 rounded-xl border border-[#002143]/10 text-[#002143] font-bold text-sm hover:bg-white transition-colors active:scale-95">
-              Xem tất cả báo cáo
-            </button>
           </div>
 
           {/* Support */}
@@ -215,6 +242,35 @@ export function AdminDashboard() {
           </div>
         </section>
       </div>
+
+      {/* Detail Modal */}
+      {selectedMonthData && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedMonthData(null)}>
+          <div className="bg-white rounded-[2rem] w-full max-w-sm p-8 shadow-2xl relative" onClick={e => e.stopPropagation()}>
+             <button onClick={() => setSelectedMonthData(null)} className="absolute top-6 right-6 text-slate-400 hover:text-red-500 transition-colors">
+               <span className="material-symbols-outlined">close</span>
+             </button>
+             <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-6">
+                <span className="material-symbols-outlined text-2xl">insights</span>
+             </div>
+             <h3 className="font-headline text-2xl font-bold text-[#002143] mb-6">Chi tiết Tháng {selectedMonthData.month}/{selectedMonthData.year}</h3>
+             <div className="space-y-4">
+                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                     <p className="text-xs text-[#51667c] font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px]">payments</span> Doanh thu
+                     </p>
+                     <p className="font-extrabold text-[#ba1a1a] text-xl">{Number(selectedMonthData.revenue).toLocaleString('vi-VN')} VNĐ</p>
+                 </div>
+                 <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                     <p className="text-xs text-[#51667c] font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px]">school</span> Học viên đăng ký
+                     </p>
+                     <p className="font-extrabold text-[#002143] text-xl">{selectedMonthData.enrollments || 0} học viên</p>
+                 </div>
+             </div>
+          </div>
+        </div>
+      )}
 
       {/* Admin Modals */}
       {showCreateCourse && (

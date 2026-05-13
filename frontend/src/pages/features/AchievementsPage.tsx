@@ -141,6 +141,11 @@ export function AchievementsPage() {
                     { rank: 3, name: "Đặng Tiến Dũng", course: "Luyện đề cấp tốc", score: "9.6" },
                     { rank: 4, name: "Hoàng Minh Đức", course: "Tổng ôn ngữ pháp", score: "9.4" },
                     { rank: 5, name: "Nguyễn Bảo Ngọc", course: "Chuyên sâu 12", score: "9.2" },
+                    { rank: 6, name: "Trần Thanh Huyền", course: "IELTS Intensive", score: "9.0" },
+                    { rank: 7, name: "Lê Quốc Khánh", course: "Luyện đề cấp tốc", score: "8.8" },
+                    { rank: 8, name: "Bùi Ngọc Hân", course: "Tổng ôn ngữ pháp", score: "8.7" },
+                    { rank: 9, name: "Võ Đình Trọng", course: "Chuyên sâu 12", score: "8.5" },
+                    { rank: 10, name: "Mai Thị Hồng Nhung", course: "IELTS Master", score: "8.3" },
                   ].map((row, idx) => (
                     <tr key={idx} className="border-b border-gray-50 hover:bg-red-50/50 transition-colors">
                       <td className="p-6">
@@ -159,11 +164,6 @@ export function AchievementsPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
-            <div className="p-6 bg-gray-50 text-center border-t border-gray-100">
-              <button className="text-navy font-bold hover:text-beered transition-colors flex items-center gap-2 mx-auto">
-                Xem toàn bộ bảng xếp hạng <ChevronRight size={20} />
-              </button>
             </div>
           </div>
         </div>

@@ -3,9 +3,10 @@ import { motion } from 'motion/react';
 import { 
   Users, UserPlus, CheckCircle, AlertTriangle, 
   Search, Filter, Download, Plus, MoreVertical,
-  ChevronLeft, ChevronRight, Clock
+  ChevronLeft, ChevronRight, Clock, Shield
 } from 'lucide-react';
 import { api } from '../../lib/api';
+import toast from 'react-hot-toast';
 
 interface KPI {
   total_students: number;
@@ -52,6 +53,7 @@ export function TeacherStudentsPage() {
   const [courseFilter, setCourseFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [activeDropdown, setActiveDropdown] = useState<number | null>(null);
 
   const [courses, setCourses] = useState<any[]>([]);
 
@@ -63,6 +65,33 @@ export function TeacherStudentsPage() {
     }, 500);
     return () => clearTimeout(handler);
   }, [search]);
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = () => setActiveDropdown(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const handleWarn = async (item: any) => {
+    if (!window.confirm(`Bạn có chắc muốn gửi cảnh cáo thái độ học tập tới học sinh ${item.user.name}?`)) return;
+    try {
+      await api.post(`/teacher/students/${item.user.id}/warn`);
+      toast.success(`Đã gửi cảnh cáo tới học sinh ${item.user.name}`);
+    } catch (err: any) {
+      toast.error('Không thể gửi cảnh cáo');
+    }
+  };
+
+  const handleReportAdmin = async (item: any) => {
+    if (!window.confirm(`Bạn có chắc muốn báo cáo học sinh ${item.user.name} lên Admin?`)) return;
+    try {
+      await api.post(`/teacher/students/${item.user.id}/report`);
+      toast.success(`Đã gửi báo cáo học sinh ${item.user.name} lên Admin`);
+    } catch (err: any) {
+      toast.error('Không thể gửi báo cáo');
+    }
+  };
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -136,10 +165,6 @@ export function TeacherStudentsPage() {
             <Download size={18} />
             Xuất báo cáo
           </button>
-          <button className="flex items-center gap-2 px-5 py-3 bg-beered text-white rounded-xl font-bold hover:bg-red-700 transition-colors shadow-[0_4px_14px_0_rgba(226,30,45,0.39)]">
-            <Plus size={18} />
-            Thêm học sinh mới
-          </button>
         </div>
       </div>
 
@@ -207,7 +232,7 @@ export function TeacherStudentsPage() {
             <select 
               value={courseFilter}
               onChange={(e) => handleFilterChange(setCourseFilter, e.target.value)}
-              className="px-4 py-3.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 min-w-[200px] outline-none hover:border-gray-300 focus:border-navy focus:ring-4 focus:ring-navy/5 transition-all text-ellipsis"
+              className="select-filter px-4 py-3.5 rounded-xl min-w-[200px]"
             >
               <option value="all">Tất cả khóa học</option>
               {courses.map(c => (
@@ -218,7 +243,7 @@ export function TeacherStudentsPage() {
             <select 
               value={statusFilter}
               onChange={(e) => handleFilterChange(setStatusFilter, e.target.value)}
-              className="px-4 py-3.5 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-700 min-w-[170px] outline-none hover:border-gray-300 focus:border-navy focus:ring-4 focus:ring-navy/5 transition-all"
+              className="select-filter px-4 py-3.5 rounded-xl min-w-[170px]"
             >
               <option value="all">Tất cả trạng thái</option>
               <option value="active">Đang học</option>
@@ -299,10 +324,32 @@ export function TeacherStudentsPage() {
                     <td className="py-6 px-4">
                       {renderStatusBadge(item.status)}
                     </td>
-                    <td className="py-6 px-8 text-right">
-                      <button className="p-2 text-gray-400 hover:text-navy hover:bg-gray-100 rounded-lg transition-colors">
+                    <td className="py-6 px-8 text-right relative">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setActiveDropdown(activeDropdown === item.id ? null : item.id); }}
+                        className="p-2 text-gray-400 hover:text-navy hover:bg-gray-100 rounded-lg transition-colors"
+                      >
                         <MoreVertical size={20} />
                       </button>
+                      
+                      {activeDropdown === item.id && (
+                        <div className="absolute right-8 top-12 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 animate-fade-in origin-top-right">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleWarn(item); setActiveDropdown(null); }}
+                            className="w-full text-left px-4 py-2.5 text-sm font-bold text-amber-600 hover:bg-amber-50 transition-colors flex items-center gap-2"
+                          >
+                            <AlertTriangle size={16} />
+                            Cảnh cáo thái độ học
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleReportAdmin(item); setActiveDropdown(null); }}
+                            className="w-full text-left px-4 py-2.5 text-sm font-bold text-beered hover:bg-red-50 transition-colors flex items-center gap-2"
+                          >
+                            <Shield size={16} />
+                            Báo cáo với Admin
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -368,59 +415,7 @@ export function TeacherStudentsPage() {
         )}
       </div>
 
-      {/* Bottom Promotions / Alerts row */}
-      <div className="grid lg:grid-cols-3 gap-6 mt-6">
-        <div className="lg:col-span-2 bg-navy rounded-[2rem] p-8 md:p-12 text-white relative overflow-hidden flex flex-col justify-center shadow-xl">
-          <div className="absolute right-0 bottom-0 opacity-10 translate-x-1/4 translate-y-1/4">
-            <svg width="400" height="400" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-              <path fill="#ffffff" d="M43.9,-70C57.4,-61.8,69,-49.5,76,-35C83,-20.5,85.5,-3.8,81.4,11.5C77.4,26.8,66.8,40.7,53.8,51.8C40.8,62.8,25.4,71.1,8.3,74.7C-8.8,78.3,-27.6,77.2,-41.8,68.8C-56,60.4,-65.7,44.7,-71.4,28.2C-77.2,11.7,-79,-5.6,-72.7,-19.9C-66.4,-34.2,-52,-45.5,-38.3,-53.8C-24.6,-62.1,-11.6,-67.4,2.3,-70.6C16.2,-73.8,30.3,-78.1,43.9,-70Z" transform="translate(100 100) scale(1.1)" />
-            </svg>
-          </div>
-          <div className="relative z-10 w-full max-w-lg space-y-4">
-            <h3 className="text-3xl font-black text-white">Phân tích chuyên sâu khóa mục tiêu 7.5+</h3>
-            <p className="text-blue-100 font-medium leading-relaxed mb-6">
-              Lớp đang có xu hướng tăng 15% về kỹ năng Writing format so với tháng trước. 
-              Cân nhắc bổ sung thêm bài tập phần Reading tuần tới.
-            </p>
-            <button className="flex items-center gap-2 bg-white text-navy font-bold px-6 py-3.5 rounded-xl hover:bg-gray-50 transition-colors shadow-lg mt-2 group w-fit">
-              Xem chi tiết phân tích 
-              <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
-        </div>
 
-        <div className="bg-beered rounded-[2rem] p-8 md:p-10 text-white relative overflow-hidden shadow-xl shadow-beered/20">
-          <div className="relative z-10 h-full flex flex-col">
-            <h3 className="text-2xl font-black mb-6">Nhắc nhở quan trọng</h3>
-            
-            <div className="space-y-5 flex-grow">
-              <div className="flex gap-4">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0 backdrop-blur-sm">
-                  <AlertTriangle size={20} className="text-white" />
-                </div>
-                <div>
-                  <p className="font-bold text-white mb-1"><span className="text-red-200">14</span> học sinh</p>
-                  <p className="text-sm text-red-100 font-medium">chưa nộp bài tập Writing Task 2 khóa IELTS Masterclass.</p>
-                </div>
-              </div>
-              
-              <div className="flex gap-4">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0 backdrop-blur-sm">
-                  <Clock size={20} className="text-white" />
-                </div>
-                <div>
-                  <p className="font-bold text-white mb-1">Họp phụ huynh</p>
-                  <p className="text-sm text-red-100 font-medium">lớp SAT - Thứ 7 tuần này lúc 19:00.</p>
-                </div>
-              </div>
-            </div>
-
-            <button className="w-full mt-8 border-2 border-white/30 text-white font-bold py-3.5 rounded-xl hover:bg-white/10 transition-colors">
-              Tạo nhắc nhở mới
-            </button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

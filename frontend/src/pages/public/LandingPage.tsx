@@ -57,7 +57,7 @@ export function LandingPage() {
           <BeeDecoration className="absolute bottom-[25%] right-[45%] opacity-20 hidden md:block" size={32} delay={3.5} />
           <BeeDecoration className="absolute top-[35%] left-[40%] opacity-15 hidden lg:block" size={40} delay={1} />
 
-          <div className="grid lg:grid-cols-[1fr_1.4fr] gap-12 lg:gap-16 items-center">
+          <div className="grid lg:grid-cols-[1fr_1.4fr] gap-12 lg:gap-16 items-center transform scale-110 origin-center my-6">
             <motion.div 
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
@@ -89,8 +89,7 @@ export function LandingPage() {
                 <div className="absolute -inset-6 bg-beered/20 rounded-[3rem] blur-3xl"></div>
                 <div className="relative rounded-[2rem] overflow-hidden border-2 border-white/10 shadow-2xl aspect-video bg-navy group">
                   <video 
-                    className="w-full h-full object-cover"
-                    controls
+                    className="w-full h-full object-cover pointer-events-none"
                     autoPlay
                     muted
                     loop
@@ -130,7 +129,12 @@ export function LandingPage() {
                   <div className="flex gap-4">
                     <div className="relative group">
                       <BeeDecoration className="absolute -top-4 -left-4 z-20 group-hover:scale-125 group-hover:-translate-y-2 group-hover:-rotate-12 transition-all duration-300 drop-shadow-lg pointer-events-none" size={28} delay={0.2} />
-                      <button className="px-8 py-3.5 bg-beered text-white font-bold rounded-full hover:scale-105 transition-transform shadow-xl shadow-beered/30 flex items-center gap-2 text-sm">
+                      <button 
+                        onClick={() => {
+                          document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="px-8 py-3.5 bg-beered text-white font-bold rounded-full hover:scale-105 transition-transform shadow-xl shadow-beered/30 flex items-center gap-2 text-sm"
+                      >
                         Khám phá ngay <ChevronRight size={18} />
                       </button>
                     </div>
@@ -155,7 +159,7 @@ export function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-24 bg-white">
+      <section id="features" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20 relative">
             <BeeDecoration className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-60" size={40} />

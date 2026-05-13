@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\DailyGoal;
 use App\Models\LearningLog;
 use App\Models\Submission;
+use App\Models\Enrollment;
+use App\Models\User;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -18,7 +21,9 @@ class StudentController extends Controller
         $user = $request->user();
 
         $totalCourses = $user->enrollments()->count();
-        $completedLessons = $user->enrollments()->sum('completed_lessons');
+        $completedLessons = \App\Models\LessonProgress::where('user_id', $user->id)
+            ->where('completed', true)
+            ->count();
 
         // Avg score from graded submissions
         $avgScore = Submission::where('student_id', $user->id)
@@ -84,6 +89,67 @@ class StudentController extends Controller
     }
 
     /**
+     * POST /api/student/daily-goals — Create a new goal
+     */
+    public function storeDailyGoal(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+        ]);
+
+        $goal = DailyGoal::create([
+            'user_id' => $request->user()->id,
+            'title'   => $request->title,
+            'progress' => $request->get('progress', '0'),
+            'is_completed' => false,
+            'date'    => today(),
+        ]);
+
+        return response()->json([
+            'id'           => $goal->id,
+            'title'        => $goal->title,
+            'is_completed' => $goal->is_completed,
+            'progress'     => $goal->progress,
+        ], 201);
+    }
+
+    /**
+     * PUT /api/student/daily-goals/{id} — Update a goal
+     */
+    public function updateDailyGoal(Request $request, $id)
+    {
+        $goal = DailyGoal::where('user_id', $request->user()->id)->findOrFail($id);
+
+        if ($request->has('title')) {
+            $goal->title = $request->title;
+        }
+        if ($request->has('progress')) {
+            $goal->progress = $request->progress;
+            $goal->is_completed = intval($request->progress) >= 100;
+        }
+
+        $goal->save();
+
+        return response()->json([
+            'id'           => $goal->id,
+            'title'        => $goal->title,
+            'is_completed' => $goal->is_completed,
+            'progress'     => $goal->progress,
+        ]);
+    }
+
+    /**
+     * DELETE /api/student/daily-goals/{id} — Delete a goal
+     */
+    public function destroyDailyGoal(Request $request, $id)
+    {
+        $goal = DailyGoal::where('user_id', $request->user()->id)->findOrFail($id);
+        $goal->delete();
+
+        return response()->json(['message' => 'Đã xóa mục tiêu.']);
+    }
+
+    /**
      * GET /api/teacher/stats — Teacher dashboard overview
      */
     public function teacherStats(Request $request)
@@ -100,12 +166,21 @@ class StudentController extends Controller
         $avgRating = $courses->avg('rating');
         $liveSessions = \App\Models\Schedule::where('teacher_id', $user->id)
             ->where('type', 'live')->count();
+        $courseIds = $courses->pluck('id');
+        $newEnrollmentsToday = Enrollment::whereIn('course_id', $courseIds)
+            ->whereDate('created_at', today())->count();
+        
+        $pendingSubmissions = Submission::whereIn('assignment_id', function($q) use ($courseIds) {
+            $q->select('id')->from('assignments')->whereIn('course_id', $courseIds);
+        })->where('status', 'submitted')->count();
 
         return response()->json([
             'total_students'  => $totalStudents,
             'total_courses'   => $totalCourses,
             'avg_rating'      => round($avgRating ?? 0, 1),
             'live_sessions'   => $liveSessions,
+            'new_enrollments_today' => $newEnrollmentsToday,
+            'pending_submissions_count' => $pendingSubmissions,
         ]);
     }
 
@@ -189,5 +264,43 @@ class StudentController extends Controller
             ],
             'students' => $list
         ]);
+    }
+    /**
+     * POST /api/teacher/students/{id}/warn — Warn a student about learning attitude
+     */
+    public function warnStudent(Request $request, $id)
+    {
+        $student = User::where('role', 'student')->findOrFail($id);
+        
+        Notification::notify(
+            $student->id,
+            'warning',
+            'Cảnh cáo từ Giảng viên',
+            'Giảng viên đã gửi cảnh cáo về thái độ học tập của bạn. Vui lòng tập trung hơn vào các bài giảng và bài tập.',
+            null,
+            'priority_high'
+        );
+
+        return response()->json(['message' => 'Đã gửi cảnh cáo cho học sinh thành công.']);
+    }
+
+    /**
+     * POST /api/teacher/students/{id}/report — Report a student to admin
+     */
+    public function reportStudent(Request $request, $id)
+    {
+        $student = User::findOrFail($id);
+        $teacher = $request->user();
+
+        Notification::notifyRole(
+            'admin',
+            'report',
+            'Báo cáo học sinh từ Giảng viên',
+            "Giảng viên {$teacher->name} đã báo cáo về học sinh {$student->name} (Email: {$student->email}). Vui lòng xem xét tình hình.",
+            null,
+            'admin_panel_settings'
+        );
+
+        return response()->json(['message' => 'Đã gửi báo cáo cho Admin thành công.']);
     }
 }

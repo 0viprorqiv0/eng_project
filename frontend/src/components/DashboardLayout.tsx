@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from './AuthContext';
 import { api } from '../lib/api';
+import { BeeBotChat } from './BeeBotChat';
 
 export function DashboardLayout() {
   const { user, logout } = useAuth();
@@ -15,6 +17,8 @@ export function DashboardLayout() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [activeToast, setActiveToast] = useState<{title: string, message: string} | null>(null);
+  const prevUnreadRef = useRef(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = async () => {
@@ -22,6 +26,7 @@ export function DashboardLayout() {
       const res = await api.get('/notifications');
       setNotifications(res.notifications || []);
       setUnreadCount(res.unread_count || 0);
+      prevUnreadRef.current = res.unread_count || 0;
     } catch (e) {
       console.error(e);
     }
@@ -30,7 +35,21 @@ export function DashboardLayout() {
   const fetchUnreadCount = async () => {
     try {
       const res = await api.get('/notifications/unread-count');
-      setUnreadCount(res.unread_count || 0);
+      const newCount = res.unread_count || 0;
+      
+      // Smart Logic: If count increased, fetch full notifs and show toast
+      if (newCount > prevUnreadRef.current) {
+        const fullRes = await api.get('/notifications');
+        const latestNotif = fullRes.notifications[0];
+        if (latestNotif) {
+          setActiveToast({ title: latestNotif.title, message: latestNotif.message });
+          setNotifications(fullRes.notifications);
+          setTimeout(() => setActiveToast(null), 5000); // Hide after 5s
+        }
+      }
+      
+      setUnreadCount(newCount);
+      prevUnreadRef.current = newCount;
     } catch (e) {
       console.error(e);
     }
@@ -42,7 +61,7 @@ export function DashboardLayout() {
 
     const interval = setInterval(() => {
       fetchUnreadCount();
-    }, 30000); // 30 seconds polling
+    }, 15000); // 15 seconds polling for snappier notifications
 
     return () => clearInterval(interval);
   }, [user]);
@@ -91,16 +110,28 @@ export function DashboardLayout() {
     return `${Math.floor(h / 24)} ngày trước`;
   };
 
-  const roleLabel = user?.role === 'admin' ? 'Super Administrator' : user?.role === 'teacher' ? 'Senior Lecturer' : 'Student';
+  const roleLabel = user?.role === 'admin' ? 'Quản trị viên cấp cao' : user?.role === 'teacher' ? 'Giảng viên cấp cao' : 'Học viên';
 
-  const navItems = [
-    { icon: 'dashboard', label: 'Dashboard', to: user?.role === 'admin' ? '/dashboard/admin' : user?.role === 'teacher' ? '/dashboard/teacher' : '/dashboard/student' },
-    { icon: 'school', label: 'My Courses', to: '/dashboard/courses' },
-    ...(user?.role === 'teacher' ? [{ icon: 'people', label: 'Students', to: '/dashboard/teacher/students' }] : []),
-    { icon: 'assignment', label: 'Assignments', to: '/dashboard/assignments' },
-    { icon: 'calendar_today', label: 'Schedule', to: '/dashboard/schedule' },
-    { icon: 'analytics', label: 'Reports', to: '/dashboard/reports' },
-    { icon: 'settings', label: 'Settings', to: '/dashboard/settings' },
+  const navItems = user?.role === 'admin' ? [
+    { icon: 'dashboard', label: 'Bảng điều khiển', to: '/dashboard/admin' },
+    { icon: 'people', label: 'Quản lý tài khoản', to: '/dashboard/admin/users' },
+    { icon: 'library_books', label: 'Quản lý khóa học', to: '/dashboard/admin/courses' },
+    { icon: 'work', label: 'Quản lý tuyển dụng', to: '/dashboard/admin/recruitment' },
+    { icon: 'assignment', label: 'Bài tập', to: '/dashboard/assignments' },
+    { icon: 'calendar_today', label: 'Lịch học', to: '/dashboard/schedule' },
+    { icon: 'notifications', label: 'Thông báo', to: '/dashboard/notifications' },
+    { icon: 'campaign', label: 'Gửi thông báo', to: '/dashboard/send-notification' },
+    { icon: 'bar_chart', label: 'Kết quả Placement Test', to: '/dashboard/admin/placement-results' },
+    { icon: 'settings', label: 'Cài đặt', to: '/dashboard/settings' },
+  ] : [
+    { icon: 'dashboard', label: 'Bảng điều khiển', to: user?.role === 'teacher' ? '/dashboard/teacher' : '/dashboard/student' },
+    { icon: 'school', label: 'Khóa học của tôi', to: '/dashboard/courses' },
+    ...(user?.role === 'teacher' ? [{ icon: 'people', label: 'Học viên', to: '/dashboard/teacher/students' }] : []),
+    { icon: 'assignment', label: 'Bài tập', to: '/dashboard/assignments' },
+    { icon: 'calendar_today', label: 'Lịch học', to: '/dashboard/schedule' },
+    { icon: 'notifications', label: 'Thông báo', to: '/dashboard/notifications' },
+    ...(user?.role === 'teacher' ? [{ icon: 'campaign', label: 'Gửi thông báo', to: '/dashboard/send-notification' }] : []),
+    { icon: 'settings', label: 'Cài đặt', to: '/dashboard/settings' },
   ];
 
   return (
@@ -139,7 +170,6 @@ export function DashboardLayout() {
             <h1 className="font-headline font-extrabold text-[#13375F] text-lg leading-none">
               {user?.role === 'admin' ? 'BeeLearn Admin' : user?.role === 'teacher' ? 'BeeLearn Teacher' : 'BeeLearn LMS'}
             </h1>
-            <p className="text-xs text-[#51667c]">Academic Atelier</p>
           </div>
         </div>
         <nav className="flex-1 space-y-1">
@@ -162,14 +192,18 @@ export function DashboardLayout() {
           ))}
         </nav>
         <div className="mt-auto space-y-4">
-          <div className="bg-[#13375f]/10 p-4 rounded-xl border border-[#13375f]/20">
-            <p className="text-xs font-bold text-[#13375f] mb-2">PRO PLAN</p>
-            <p className="text-[11px] text-[#51667c] mb-3 leading-relaxed">Access advanced analytics and unlimited storage.</p>
-            <button className="w-full bg-[#13375F] text-white py-2 rounded-lg text-xs font-bold shadow-md hover:opacity-90 transition-opacity">Upgrade Plan</button>
-          </div>
+          <Link to="/" className="block bg-[#13375f]/10 p-4 rounded-xl border border-[#13375f]/20 hover:bg-[#13375f]/20 transition-colors group">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-[#13375f] group-hover:scale-110 transition-transform">home</span>
+              <div>
+                <p className="text-xs font-bold text-[#13375f]">Trang chủ</p>
+                <p className="text-[11px] text-[#51667c] leading-relaxed">Quay về trang chủ BeeLearn</p>
+              </div>
+            </div>
+          </Link>
           <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-xl transition-all w-full">
             <span className="material-symbols-outlined">logout</span>
-            <span>Logout</span>
+            <span>Đăng xuất</span>
           </button>
         </div>
       </aside>
@@ -180,7 +214,7 @@ export function DashboardLayout() {
         <header className="fixed top-0 right-0 left-64 z-40 bg-white/80 backdrop-blur-xl flex justify-between items-center px-8 py-4 border-b border-slate-100">
           <div className="flex items-center bg-[#e8e8ec] px-4 py-2 rounded-xl w-96">
             <span className="material-symbols-outlined text-[#73777f] text-xl mr-2">search</span>
-            <input className="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-[#43474e]/50 outline-none" placeholder="Search courses, students, reports..." type="text" />
+            <input className="bg-transparent border-none focus:ring-0 text-sm w-full placeholder:text-[#43474e]/50 outline-none" placeholder="Tìm kiếm khóa học, học viên..." type="text" />
           </div>
           <div className="flex items-center gap-4">
             
@@ -234,18 +268,28 @@ export function DashboardLayout() {
                               if (notif.link) navigate(notif.link);
                               setIsDropdownOpen(false);
                             }}
-                            className={`p-4 flex gap-4 cursor-pointer hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 ${!notif.is_read ? 'bg-blue-50/30' : ''}`}
+                            className={`p-4 flex gap-4 cursor-pointer hover:bg-slate-50 transition-all border-b border-slate-50/50 last:border-0 relative ${!notif.is_read ? 'bg-blue-50/40' : ''}`}
                           >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${!notif.is_read ? 'bg-[#13375f] text-white' : 'bg-[#f4f3f7] text-[#51667c]'}`}>
-                              <span className="material-symbols-outlined text-lg">{notif.icon || 'notifications'}</span>
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden transition-transform duration-300 group-hover:scale-110 ${!notif.is_read ? 'bg-[#13375f] text-white shadow-lg shadow-[#13375f]/20' : 'bg-slate-100 text-[#51667c]'}`}>
+                              <span className="material-symbols-outlined text-xl select-none">{notif.icon || 'notifications'}</span>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className={`text-sm tracking-tight mb-0.5 ${!notif.is_read ? 'font-bold text-[#002143]' : 'font-semibold text-[#1a1c1f]'}`}>{notif.title}</p>
-                              <p className="text-xs text-[#51667c] line-clamp-2 mb-1.5 leading-relaxed">{notif.message}</p>
-                              <p className="text-[10px] font-bold text-[#8a99a8] uppercase">{timeAgo(notif.created_at)}</p>
+                            <div className="flex-1 min-w-0 pr-2">
+                              <p className={`text-sm tracking-tight mb-0.5 truncate ${!notif.is_read ? 'font-black text-[#002143]' : 'font-bold text-slate-700'}`}>{notif.title}</p>
+                              <p className="text-[12px] text-slate-500 line-clamp-2 leading-relaxed mb-2">{notif.message}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{timeAgo(notif.created_at)}</p>
+                                {notif.is_pinned && (
+                                  <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                )}
+                                {notif.is_pinned && (
+                                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[10px]">push_pin</span> Đã ghim
+                                  </span>
+                                )}
+                              </div>
                             </div>
                             {!notif.is_read && (
-                              <div className="w-2 h-2 rounded-full bg-[#13375f] mt-1.5 flex-shrink-0"></div>
+                              <div className="w-2 h-2 rounded-full bg-blue-600 mt-2 flex-shrink-0 shadow-sm animate-pulse"></div>
                             )}
                           </div>
                         ))}
@@ -271,7 +315,7 @@ export function DashboardLayout() {
             <div className="h-8 w-[1px] bg-slate-200 mx-2"></div>
             <div className="flex items-center gap-3 pl-2">
               <div className="text-right">
-                <p className="text-sm font-bold text-[#002143] leading-none">{user?.name || 'User'}</p>
+                <p className="text-sm font-bold text-[#002143] leading-none">{user?.name || 'Người dùng'}</p>
                 <p className="text-[10px] text-[#51667c] font-medium tracking-wider uppercase">{roleLabel}</p>
               </div>
               <div className="w-10 h-10 rounded-xl bg-[#13375f] flex items-center justify-center text-white font-bold text-sm">
@@ -285,6 +329,31 @@ export function DashboardLayout() {
         <div className="pt-24 px-8 pb-12">
           <Outlet />
         </div>
+
+        {/* Global Toast Notification */}
+        <AnimatePresence>
+          {activeToast && (
+            <motion.div 
+              initial={{ opacity: 0, x: 100 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 100 }}
+              className="fixed bottom-6 right-6 z-[60] bg-[#13375f] text-white p-4 rounded-2xl shadow-2xl flex items-center gap-4 max-w-sm border border-white/20 backdrop-blur-md"
+            >
+              <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-xl">rocket_launch</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm truncate">{activeToast.title}</p>
+                <p className="text-xs text-white/80 line-clamp-2">{activeToast.message}</p>
+              </div>
+              <button onClick={() => setActiveToast(null)} className="p-1 hover:bg-white/10 rounded-lg">
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        {/* BeeBot AI Chatbot */}
+        <BeeBotChat />
       </main>
     </div>
   );

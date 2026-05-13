@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { Mail, Lock, BookOpen, Lightbulb } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Mail, Lock, BookOpen, Lightbulb, Phone, X, Eye, EyeOff } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../components/AuthContext';
 import { BeeDecoration } from '../../components/BeeDecoration';
@@ -22,6 +22,8 @@ export function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -81,34 +83,21 @@ export function LoginPage() {
       </div>
 
       <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-28 md:pt-16 md:pb-40 flex-col justify-center flex-grow flex">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="grid lg:grid-cols-12 gap-8 lg:gap-16 items-center"
-        >
+        <div className="grid lg:grid-cols-12 gap-8 lg:gap-16 items-center">
           {/* Left Side - Hero - Takes 6/12 columns (balanced) */}
           <div className="lg:col-span-6 space-y-8 relative z-10 flex flex-col justify-center">
-             <motion.div  
-               initial={{ opacity: 0, x: -30 }}
-               animate={{ opacity: 1, x: 0 }}
-               transition={{ delay: 0.2, duration: 0.5 }}
-               className="max-w-xl"
-            >
+             <div className="max-w-xl">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-navy leading-[1.1] mb-6 drop-shadow-sm">
                 Mở khoá tri thức,
                 <br />
                 Kiến tạo tương lai.
               </h1>
               <p className="text-lg text-gray-600 leading-relaxed font-medium">
-                Học tập không giới hạn cùng BeeLearn Academic Atelier. Nơi kiến thức hàn lâm gặp gỡ sự sáng tạo.
+                Học tập không giới hạn cùng BeeLearn. Nơi kiến thức hàn lâm gặp gỡ sự sáng tạo.
               </p>
-            </motion.div>
+            </div>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
+            <div 
               className="relative w-full aspect-[4/3] rounded-[2.5rem] bg-white p-2 shadow-2xl skew-y-1 transform transition-transform hover:skew-y-0 duration-500"
             >
               <div className="relative w-full h-full rounded-[2rem] overflow-hidden">
@@ -140,10 +129,7 @@ export function LoginPage() {
               </div>
 
               {/* Floating Approved Card */}
-              <motion.div 
-                initial={{ opacity: 0, x: -50 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.6 }}
+              <div 
                 className="absolute -left-4 lg:-left-12 -bottom-10 bg-[#f8f9fc] rounded-[1.25rem] p-4 shadow-2xl border border-white/50 z-20 hidden md:flex items-center gap-4 max-w-[280px]"
               >
                  <div className="w-12 h-12 rounded-full bg-[#e6ecf3] flex items-center justify-center text-navy flex-shrink-0">
@@ -153,17 +139,14 @@ export function LoginPage() {
                    <p className="font-bold text-navy text-sm mb-0.5">Chương trình 12+</p>
                    <p className="text-[11px] text-gray-500 leading-tight pr-2">Lộ trình học thuật chuẩn quốc tế.</p>
                  </div>
-              </motion.div>
-            </motion.div>
+              </div>
+            </div>
 
 
           </div>
 
           {/* Right Side - Login Form - Takes 6/12 columns */}
-          <motion.div 
-             initial={{ opacity: 0, x: 30 }}
-             animate={{ opacity: 1, x: 0 }}
-             transition={{ delay: 0.3, duration: 0.5 }}
+          <div 
              className="lg:col-span-6 bg-white rounded-[2.5rem] p-8 md:p-12 shadow-2xl border border-gray-100 relative z-20"
           >
             <div className="flex justify-between items-start mb-8 relative">
@@ -199,16 +182,23 @@ export function LoginPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center ml-1">
                   <label className="text-sm font-bold text-navy">Mật khẩu</label>
-                  <a href="#" className="text-xs font-bold text-[#e65540] hover:text-red-700 transition-colors">Quên mật khẩu?</a>
+                  <button type="button" onClick={() => setShowForgotPassword(true)} className="text-xs font-bold text-[#e65540] hover:text-red-700 transition-colors">Quên mật khẩu?</button>
                 </div>
                 <div className="relative group">
                    <input 
-                     type="password" 
+                     type={showPassword ? 'text' : 'password'} 
                      value={password}
                      onChange={(e) => setPassword(e.target.value)}
                      placeholder="••••••••" 
-                     className="block w-full px-5 py-4 bg-[#f2f4f8] border-2 border-transparent focus:border-navy/10 rounded-xl text-navy placeholder-gray-400 focus:outline-none focus:ring-0 transition-all font-medium"
+                     className="block w-full px-5 py-4 pr-12 bg-[#f2f4f8] border-2 border-transparent focus:border-navy/10 rounded-xl text-navy placeholder-gray-400 focus:outline-none focus:ring-0 transition-all font-medium"
                    />
+                   <button
+                     type="button"
+                     onClick={() => setShowPassword(!showPassword)}
+                     className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-navy transition-colors"
+                   >
+                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                   </button>
                 </div>
               </div>
 
@@ -232,49 +222,6 @@ export function LoginPage() {
                 {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
               </button>
 
-              <div className="relative my-8">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200"></div>
-                </div>
-                <div className="relative flex justify-center text-xs uppercase tracking-widest">
-                  <span className="px-4 bg-white text-gray-400 font-semibold">Hoặc tiếp tục với</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  className="flex items-center justify-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl shadow-sm bg-white text-sm font-bold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-navy transition-all hover:shadow-md"
-                >
-                  <svg className="h-5 w-5" viewBox="0 0 24 24">
-                    <path
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                      fill="#4285F4"
-                    />
-                    <path
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      fill="#34A853"
-                    />
-                    <path
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                      fill="#FBBC05"
-                    />
-                    <path
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                      fill="#EA4335"
-                    />
-                  </svg>
-                  Google
-                </button>
-                <button
-                  type="button"
-                  className="flex items-center justify-center gap-3 px-4 py-3.5 border border-gray-200 rounded-xl shadow-sm bg-white text-sm font-bold text-gray-700 hover:bg-[#1877F2] hover:text-white hover:border-[#1877F2] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-navy transition-all hover:shadow-md group"
-                >
-                  <img src="https://www.svgrepo.com/show/475647/facebook-color.svg" className="w-5 h-5 group-hover:brightness-0 group-hover:invert transition opacity-80" alt="Facebook" />
-                  Facebook
-                </button>
-              </div>
-
                <div className="mt-8 text-center">
                   <p className="text-gray-500 text-sm">
                      Chưa có tài khoản?{' '}
@@ -286,9 +233,80 @@ export function LoginPage() {
 
 
             </form>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </section>
+
+      {/* Forgot Password Modal */}
+      <AnimatePresence>
+        {showForgotPassword && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100]"
+              onClick={() => setShowForgotPassword(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl p-8 shadow-2xl z-[101] w-[90vw] max-w-md"
+            >
+              <button
+                onClick={() => setShowForgotPassword(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-[#FEF3F2] rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Lock size={28} className="text-[#e65540]" />
+                </div>
+                <h3 className="text-xl font-black text-navy mb-2">Quên mật khẩu?</h3>
+                <p className="text-gray-500 text-sm leading-relaxed">
+                  Đừng lo, hãy liên hệ với chúng tôi để được hỗ trợ đặt lại mật khẩu ngay nhé!
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <a
+                  href="tel:19006789"
+                  className="flex items-center gap-4 p-4 bg-[#f4f5fb] rounded-2xl hover:bg-navy/5 transition-colors group"
+                >
+                  <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+                    <Phone size={20} className="text-navy" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-navy text-sm">Gọi Hotline</p>
+                    <p className="text-xs text-gray-500">1900 6789 (8:00 - 21:00)</p>
+                  </div>
+                </a>
+
+                <a
+                  href="mailto:contact@beelearn.edu.vn?subject=Yêu cầu đặt lại mật khẩu"
+                  className="flex items-center gap-4 p-4 bg-[#f4f5fb] rounded-2xl hover:bg-navy/5 transition-colors group"
+                >
+                  <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
+                    <Mail size={20} className="text-[#e65540]" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-navy text-sm">Gửi Email</p>
+                    <p className="text-xs text-gray-500">contact@beelearn.edu.vn</p>
+                  </div>
+                </a>
+              </div>
+
+              <p className="text-center text-[11px] text-gray-400 mt-5">
+                Vui lòng cung cấp email đã đăng ký để được xác minh và đặt lại mật khẩu.
+              </p>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
       {/* Fixed Book Icon floating on the left edge */}
       <motion.div 
         whileHover={{ scale: 1.1, x: 5 }}

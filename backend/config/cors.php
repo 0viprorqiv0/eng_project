@@ -25,7 +25,7 @@ return [
 
     'allowed_origins_patterns' => [
         // Cho phép tất cả subdomain Vercel (preview deployments)
-        'https://.*\.vercel\.app',
+        '#https://.*\.vercel\.app#',
     ],
 
     'allowed_headers' => ['*'],
